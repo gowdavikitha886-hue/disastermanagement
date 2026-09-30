@@ -1,0 +1,3788 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RakshaNet-X | Multi-Hazard Disaster Management Platform</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <style>
+      :root {
+        --bg: #f4f6f9;
+        --panel: #ffffff;
+        --panel-2: #eef1f6;
+        --text: #101828;
+        --muted: #5b6472;
+        --border: #e1e5ec;
+        --accent: #1d4ed8;
+        --accent-2: #0ea5e9;
+        --good: #16a34a;
+        --warn: #d97706;
+        --bad: #dc2626;
+        --crit: #991b1b;
+        --shadow:
+          0 1px 3px rgba(16, 24, 40, 0.08), 0 1px 2px rgba(16, 24, 40, 0.06);
+        --radius: 12px;
+        --font:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+      }
+      :root:not([data-theme="light"]) {
+        @media (prefers-color-scheme: dark) {
+          --bg: #0b0f17;
+          --panel: #121826;
+          --panel-2: #1a2233;
+          --text: #e7ecf5;
+          --muted: #93a0b4;
+          --border: #232d40;
+          --accent: #3b82f6;
+          --accent-2: #22d3ee;
+          --good: #22c55e;
+          --warn: #f59e0b;
+          --bad: #ef4444;
+          --crit: #f87171;
+          --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+        }
+      }
+      :root[data-theme="dark"] {
+        --bg: #0b0f17;
+        --panel: #121826;
+        --panel-2: #1a2233;
+        --text: #e7ecf5;
+        --muted: #93a0b4;
+        --border: #232d40;
+        --accent: #3b82f6;
+        --accent-2: #22d3ee;
+        --good: #22c55e;
+        --warn: #f59e0b;
+        --bad: #ef4444;
+        --crit: #f87171;
+        --shadow: 0 1px 3px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font);
+        min-height: 100vh;
+        -webkit-font-smoothing: antialiased;
+      }
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 8px;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        background: linear-gradient(135deg, #0f2653, #132a63 60%, #0ea5e9);
+        color: #fff;
+        position: sticky;
+        top: 0;
+        z-index: 500;
+        box-shadow: var(--shadow);
+        flex-wrap: wrap;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 800;
+        font-size: 20px;
+      }
+      .brand .logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.15);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 19px;
+        border: 1px solid rgba(255, 255, 255, 0.35);
+      }
+      .brand small {
+        display: block;
+        font-weight: 500;
+        font-size: 11px;
+        opacity: 0.85;
+      }
+      .topbar .spacer {
+        flex: 1;
+      }
+      .clock {
+        font-size: 12px;
+        opacity: 0.9;
+        text-align: right;
+        line-height: 1.3;
+      }
+      .theme-btn,
+      .siren-btn,
+      .mute-btn,
+      .panic-btn-top {
+        background: rgba(255, 255, 255, 0.12);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+        border-radius: 8px;
+        padding: 7px 10px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .theme-btn:hover,
+      .siren-btn:hover,
+      .mute-btn:hover,
+      .panic-btn-top:hover {
+        background: rgba(255, 255, 255, 0.22);
+      }
+      .panic-btn-top {
+        background: var(--crit);
+        border-color: var(--crit);
+        font-weight: 800;
+      }
+      .siren-btn.live {
+        background: var(--bad);
+        border-color: var(--bad);
+        animation: pulseBtn 1s infinite;
+      }
+      .siren-btn.armed {
+        opacity: 0.65;
+      }
+      @keyframes pulseBtn {
+        0%,
+        100% {
+          filter: brightness(1);
+        }
+        50% {
+          filter: brightness(1.5);
+        }
+      }
+
+      .tabs {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding: 8px 14px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 60px;
+        z-index: 400;
+      }
+      .tabs::-webkit-scrollbar {
+        height: 5px;
+      }
+      .tab-btn {
+        flex: 0 0 auto;
+        padding: 9px 14px;
+        border-radius: 9px;
+        border: 1px solid transparent;
+        background: transparent;
+        color: var(--muted);
+        font-size: 13.5px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: 0.15s;
+      }
+      .tab-btn:hover {
+        background: var(--panel-2);
+        color: var(--text);
+      }
+      .tab-btn.active {
+        background: var(--accent);
+        color: #fff;
+        box-shadow: var(--shadow);
+      }
+      .tab-sep {
+        width: 1px;
+        background: var(--border);
+        margin: 4px 4px;
+        flex: 0 0 auto;
+      }
+
+      .wrap {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 18px 16px 60px;
+      }
+      .view {
+        display: none;
+        animation: fade 0.25s ease;
+      }
+      .view.active {
+        display: block;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: none;
+        }
+      }
+
+      h1.page-title {
+        font-size: 21px;
+        margin: 2px 0 4px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .page-sub {
+        color: var(--muted);
+        font-size: 13.5px;
+        margin: 0 0 18px;
+      }
+
+      .stage-strip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      @media (max-width: 800px) {
+        .stage-strip {
+          grid-template-columns: 1fr;
+        }
+      }
+      .stage-card {
+        border-radius: var(--radius);
+        padding: 14px 16px;
+        color: #fff;
+        cursor: default;
+        box-shadow: var(--shadow);
+      }
+      .stage-card.before {
+        background: linear-gradient(135deg, #0f766e, #0ea5e9);
+      }
+      .stage-card.during {
+        background: linear-gradient(135deg, #b91c1c, #ea580c);
+      }
+      .stage-card.after {
+        background: linear-gradient(135deg, #4338ca, #7c3aed);
+      }
+      .stage-card b {
+        display: block;
+        font-size: 13px;
+        opacity: 0.85;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 4px;
+      }
+      .stage-card .h {
+        font-size: 15.5px;
+        font-weight: 800;
+        margin-bottom: 6px;
+      }
+      .stage-card .links {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-top: 8px;
+      }
+      .stage-card .links button {
+        background: rgba(255, 255, 255, 0.18);
+        border: 1px solid rgba(255, 255, 255, 0.35);
+        color: #fff;
+        border-radius: 20px;
+        padding: 4px 10px;
+        font-size: 11.5px;
+        cursor: pointer;
+        font-weight: 700;
+      }
+      .stage-card .links button:hover {
+        background: rgba(255, 255, 255, 0.32);
+      }
+      .stage-card p {
+        margin: 0;
+        font-size: 12.5px;
+        opacity: 0.95;
+        line-height: 1.4;
+      }
+
+      .grid {
+        display: grid;
+        gap: 14px;
+      }
+      .g-4 {
+        grid-template-columns: repeat(4, 1fr);
+      }
+      .g-3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+      .g-2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      @media (max-width: 980px) {
+        .g-4 {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .g-3 {
+          grid-template-columns: 1fr 1fr;
+        }
+        .g-2 {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 600px) {
+        .g-4 {
+          grid-template-columns: 1fr;
+        }
+        .g-3 {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 16px;
+        box-shadow: var(--shadow);
+        position: relative;
+      }
+      .card h3 {
+        margin: 0 0 12px;
+        font-size: 14.5px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .card h3 .tag {
+        font-weight: 600;
+        font-size: 11px;
+        color: var(--muted);
+        margin-left: auto;
+      }
+
+      .stat-card {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .stat-card .icon {
+        font-size: 22px;
+      }
+      .stat-card .num {
+        font-size: 26px;
+        font-weight: 800;
+      }
+      .stat-card .lbl {
+        color: var(--muted);
+        font-size: 12.5px;
+        font-weight: 600;
+      }
+      .stat-card.b-red {
+        border-left: 4px solid var(--bad);
+      }
+      .stat-card.b-amber {
+        border-left: 4px solid var(--warn);
+      }
+      .stat-card.b-blue {
+        border-left: 4px solid var(--accent);
+      }
+      .stat-card.b-green {
+        border-left: 4px solid var(--good);
+      }
+      .stat-card.b-pink {
+        border-left: 4px solid #db2777;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 3px 9px;
+        border-radius: 20px;
+        font-size: 11.5px;
+        font-weight: 700;
+      }
+      .b-LOW {
+        background: rgba(22, 163, 74, 0.15);
+        color: var(--good);
+      }
+      .b-MEDIUM {
+        background: rgba(217, 119, 6, 0.15);
+        color: var(--warn);
+      }
+      .b-HIGH {
+        background: rgba(220, 38, 38, 0.15);
+        color: var(--bad);
+      }
+      .b-CRITICAL {
+        background: rgba(153, 27, 27, 0.2);
+        color: var(--crit);
+      }
+      .b-waiting {
+        background: rgba(217, 119, 6, 0.15);
+        color: var(--warn);
+      }
+      .b-assigned {
+        background: rgba(14, 165, 233, 0.15);
+        color: var(--accent-2);
+      }
+      .b-rescued {
+        background: rgba(22, 163, 74, 0.15);
+        color: var(--good);
+      }
+
+      .btn {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 8px;
+        padding: 9px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: 0.15s;
+      }
+      .btn:hover {
+        filter: brightness(1.08);
+      }
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .btn.sm {
+        padding: 6px 10px;
+        font-size: 12px;
+        border-radius: 6px;
+      }
+      .btn.outline {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      .btn.good {
+        background: var(--good);
+      }
+      .btn.warn {
+        background: var(--warn);
+      }
+      .btn.bad {
+        background: var(--bad);
+      }
+      .btn.pink {
+        background: #db2777;
+      }
+      .btn.block {
+        width: 100%;
+      }
+
+      label {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--muted);
+        display: block;
+        margin: 10px 0 4px;
+      }
+      input[type="text"],
+      input[type="number"],
+      input[type="tel"],
+      select,
+      textarea {
+        width: 100%;
+        padding: 9px 10px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        color: var(--text);
+        font-size: 13.5px;
+        font-family: var(--font);
+      }
+      input[type="file"] {
+        width: 100%;
+        font-size: 12.5px;
+        color: var(--muted);
+      }
+      textarea {
+        resize: vertical;
+        min-height: 60px;
+      }
+      input:focus,
+      select:focus,
+      textarea:focus {
+        outline: 2px solid var(--accent);
+        outline-offset: 0;
+      }
+      .check-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .check-pill {
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 6px 12px;
+        font-size: 12.5px;
+        cursor: pointer;
+        user-select: none;
+        background: var(--panel-2);
+      }
+      .check-pill.on {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th {
+        text-align: left;
+        color: var(--muted);
+        font-size: 11.5px;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        padding: 8px 6px;
+        border-bottom: 1px solid var(--border);
+      }
+      td {
+        padding: 9px 6px;
+        border-bottom: 1px solid var(--border);
+        vertical-align: middle;
+      }
+      tr:last-child td {
+        border-bottom: none;
+      }
+      .table-wrap {
+        overflow-x: auto;
+      }
+      .muted {
+        color: var(--muted);
+      }
+      .small {
+        font-size: 12px;
+      }
+      .hr {
+        height: 1px;
+        background: var(--border);
+        margin: 14px 0;
+      }
+
+      .pill-row {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+      }
+      .pill {
+        border: 1px solid var(--border);
+        background: var(--panel-2);
+        border-radius: 22px;
+        padding: 8px 14px;
+        cursor: pointer;
+        font-size: 12.5px;
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .pill.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+      }
+
+      .progress {
+        height: 8px;
+        border-radius: 6px;
+        background: var(--panel-2);
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .progress > div {
+        height: 100%;
+        background: var(--accent);
+      }
+
+      .alert-item {
+        border-left: 4px solid var(--bad);
+        background: var(--panel-2);
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-bottom: 8px;
+      }
+      .alert-item.MEDIUM {
+        border-color: var(--warn);
+      }
+      .alert-item.LOW {
+        border-color: var(--good);
+      }
+      .alert-item.CRITICAL {
+        border-color: var(--crit);
+      }
+      .alert-item .t {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .toast {
+        position: fixed;
+        bottom: 18px;
+        right: 18px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-left: 4px solid var(--good);
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: var(--shadow);
+        max-width: 320px;
+        z-index: 900;
+        font-size: 13px;
+        animation: fade 0.2s ease;
+      }
+      .toast.CRITICAL {
+        border-left-color: var(--crit);
+      }
+
+      .leaflet-map {
+        width: 100%;
+        height: 420px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+        position: relative;
+        z-index: 1;
+        isolation: isolate;
+      }
+      .leaflet-map.small {
+        height: 260px;
+      }
+      /* keep leaflet's own top-left/top-right controls from ever floating above the sticky topbar/tabs */
+      .leaflet-top,
+      .leaflet-bottom {
+        z-index: 350 !important;
+      }
+      .leaflet-pane {
+        z-index: 2 !important;
+      }
+      .legend {
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+        font-size: 11.5px;
+        margin-top: 10px;
+        color: var(--muted);
+      }
+      .legend span.dot {
+        display: inline-block;
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        margin-right: 5px;
+      }
+      .divmarker {
+        border-radius: 50%;
+        border: 2px solid #fff;
+        box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.2);
+      }
+      .divmarker.pulse {
+        animation: markerPulse 1.1s infinite;
+      }
+      @keyframes markerPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.6);
+        }
+        70% {
+          box-shadow: 0 0 0 14px rgba(220, 38, 38, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+        }
+      }
+
+      .side-panel {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 13px;
+      }
+      .photo-preview {
+        max-width: 140px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        margin-top: 6px;
+        display: block;
+      }
+
+      .chatlog {
+        height: 300px;
+        overflow-y: auto;
+        background: var(--panel-2);
+        border-radius: 10px;
+        padding: 12px;
+        border: 1px solid var(--border);
+        margin-bottom: 10px;
+      }
+      .msg {
+        max-width: 80%;
+        padding: 8px 12px;
+        border-radius: 12px;
+        margin-bottom: 8px;
+        font-size: 13.5px;
+        line-height: 1.4;
+      }
+      .msg.bot {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-bottom-left-radius: 2px;
+      }
+      .msg.me {
+        background: var(--accent);
+        color: #fff;
+        margin-left: auto;
+        border-bottom-right-radius: 2px;
+      }
+
+      .foot {
+        text-align: center;
+        color: var(--muted);
+        font-size: 11.5px;
+        margin-top: 30px;
+        padding-top: 16px;
+        border-top: 1px solid var(--border);
+      }
+      .risk-gauge {
+        text-align: center;
+        padding: 10px 0;
+      }
+      .risk-gauge .score {
+        font-size: 44px;
+        font-weight: 900;
+      }
+      .risk-gauge .lvl {
+        font-size: 15px;
+        font-weight: 800;
+        margin-top: 2px;
+      }
+      .two-col {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 14px;
+      }
+      @media (max-width: 900px) {
+        .two-col {
+          grid-template-columns: 1fr;
+        }
+      }
+      .inline-flex {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .chip {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        font-weight: 700;
+        color: var(--muted);
+      }
+      .critical-banner {
+        background: var(--crit);
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 10px;
+        font-size: 13px;
+        font-weight: 700;
+        margin-bottom: 12px;
+        display: none;
+      }
+      .critical-banner.show {
+        display: block;
+      }
+      .safe-banner {
+        background: rgba(22, 163, 74, 0.12);
+        border: 1px solid var(--good);
+        color: var(--good);
+        padding: 8px 14px;
+        border-radius: 10px;
+        font-size: 12.5px;
+        font-weight: 700;
+        margin-bottom: 12px;
+      }
+      .route-summary {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+        margin: 12px 0;
+      }
+      @media (max-width: 700px) {
+        .route-summary {
+          grid-template-columns: 1fr;
+        }
+      }
+      .route-summary .rs {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 12px;
+      }
+      .route-summary .rs b {
+        display: block;
+        font-size: 17px;
+      }
+      .route-summary .rs span {
+        font-size: 11.5px;
+        color: var(--muted);
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+      .helpline-table td:first-child {
+        font-weight: 800;
+        white-space: nowrap;
+      }
+      .helpline-table a {
+        color: var(--accent);
+        text-decoration: none;
+        font-weight: 800;
+      }
+      .country-flag {
+        font-size: 15px;
+        margin-right: 4px;
+      }
+      thumb-img {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">🛡️</div>
+        <div>
+          RakshaNet-X<small>AI Multi-Hazard Disaster Command Platform</small>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <button class="panic-btn-top" id="panicBtnTop" type="button">
+        🆘 PANIC
+      </button>
+      <button class="siren-btn" id="sirenBtn" type="button">
+        🔇 Siren: Standby
+      </button>
+      <div class="clock" id="clockBox">—</div>
+      <button class="theme-btn" id="themeToggle" type="button">🌓 Theme</button>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <div class="wrap" id="views"></div>
+    <div id="toastHost"></div>
+
+    <script>
+      /* =====================================================================
+   RAKSHANET-X — fully client-side multi-hazard disaster management app.
+   Real Leaflet GPS maps, live browser geolocation capture for SOS,
+   photo/age/situation intake, siren alarm, and route drawing from a
+   citizen's live location to the nearest hospital on critical cases.
+   Data persists to localStorage per-browser. Every action here really
+   mutates state and re-renders — nothing is a static screenshot.
+   ===================================================================== */
+
+      /* ---------------------------- THEME ---------------------------- */
+      (function () {
+        try {
+          const s = localStorage.getItem("rn_theme");
+          if (s) document.documentElement.setAttribute("data-theme", s);
+        } catch (e) {}
+      })();
+      document.getElementById("themeToggle").addEventListener("click", () => {
+        const cur = document.documentElement.getAttribute("data-theme");
+        const next = cur === "dark" ? "light" : cur === "light" ? "" : "dark";
+        if (next) document.documentElement.setAttribute("data-theme", next);
+        else document.documentElement.removeAttribute("data-theme");
+        try {
+          localStorage.setItem("rn_theme", next);
+        } catch (e) {}
+      });
+
+      /* ---------------------------- CLOCK ---------------------------- */
+      function tickClock() {
+        const d = new Date();
+        document.getElementById("clockBox").innerHTML =
+          d.toLocaleDateString(undefined, {
+            weekday: "short",
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          }) +
+          "<br>" +
+          d.toLocaleTimeString();
+      }
+      tickClock();
+      setInterval(tickClock, 1000);
+
+      /* ---------------------------- SIREN (Web Audio, no external files) ----------------------------
+   IMPORTANT: the siren NEVER plays on load or "just because". It only ever starts when a
+   real disaster-severity event fires (a CRITICAL risk assessment, a CRITICAL/HIGH manual
+   alert, a CRITICAL SOS, or the panic button), and it auto-silences itself the moment no
+   CRITICAL condition remains anywhere in the platform (see checkSirenAutoState()). */
+      const Siren = (function () {
+        let ctx = null,
+          osc = null,
+          gain = null,
+          lfo = null,
+          playing = false;
+        function ensureCtx() {
+          if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          return ctx;
+        }
+        function start() {
+          if (playing) return;
+          try {
+            ensureCtx();
+            if (ctx.state === "suspended") ctx.resume();
+            osc = ctx.createOscillator();
+            gain = ctx.createGain();
+            lfo = ctx.createOscillator();
+            const lfoGain = ctx.createGain();
+            osc.type = "sawtooth";
+            osc.frequency.value = 600;
+            lfo.type = "sine";
+            lfo.frequency.value = 0.6;
+            lfoGain.gain.value = 350;
+            lfo.connect(lfoGain);
+            lfoGain.connect(osc.frequency);
+            gain.gain.value = 0.06;
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start();
+            lfo.start();
+            playing = true;
+            document.getElementById("sirenBtn").classList.add("live");
+            document.getElementById("sirenBtn").classList.remove("armed");
+            document.getElementById("sirenBtn").innerHTML =
+              "🔊 Siren: LIVE — Stop";
+          } catch (e) {
+            console.warn("Siren unavailable", e);
+          }
+        }
+        function stop() {
+          if (!playing) return;
+          try {
+            osc.stop();
+            lfo.stop();
+          } catch (e) {}
+          playing = false;
+          document.getElementById("sirenBtn").classList.remove("live");
+          document.getElementById("sirenBtn").classList.add("armed");
+          document.getElementById("sirenBtn").innerHTML = "🔇 Siren: Standby";
+        }
+        function toggle() {
+          playing ? stop() : start();
+        }
+        return { start, stop, toggle, isPlaying: () => playing };
+      })();
+      document
+        .getElementById("sirenBtn")
+        .addEventListener("click", Siren.toggle);
+
+      /* Re-evaluates whether ANY real critical condition still exists. If not, silence the
+   siren automatically — the platform should be quiet by default and only loud during an
+   actual, ongoing emergency. Call this after every state mutation. */
+      function checkSirenAutoState() {
+        const criticalAlert = STATE.alerts.some((a) => a.level === "CRITICAL");
+        const criticalZone = STATE.zones.some(
+          (z) => z.riskLevel === "CRITICAL",
+        );
+        const criticalSos = STATE.sos.some(
+          (s) => s.status !== "rescued" && s.priority === "CRITICAL",
+        );
+        const stillCritical = criticalAlert || criticalZone || criticalSos;
+        if (stillCritical) Siren.start();
+        else Siren.stop();
+      }
+
+      /* ---------------------------- GEO HELPERS ---------------------------- */
+      function haversineKm(lat1, lon1, lat2, lon2) {
+        const R = 6371,
+          dLat = ((lat2 - lat1) * Math.PI) / 180,
+          dLon = ((lon2 - lon1) * Math.PI) / 180;
+        const a =
+          Math.sin(dLat / 2) ** 2 +
+          Math.cos((lat1 * Math.PI) / 180) *
+            Math.cos((lat2 * Math.PI) / 180) *
+            Math.sin(dLon / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      }
+      function nearestFacility(lat, lng, list) {
+        let best = null,
+          bestD = Infinity;
+        list.forEach((f) => {
+          const d = haversineKm(lat, lng, f.lat, f.lng);
+          if (d < bestD) {
+            bestD = d;
+            best = f;
+          }
+        });
+        return best ? { ...best, distanceKm: bestD } : null;
+      }
+
+      /* ---------------------------- REAL-WORLD LOCATION DATABASE ----------------------------
+   Real cities across India, Pakistan and Japan with real coordinates, for the
+   From → To Location Router (exact distance + real road route between any two
+   of them) and for grounding hazard zones in real geography rather than
+   invented placeholders. */
+      const LOCATIONS = [
+        // India
+        {
+          id: "IN-BLR",
+          name: "Bengaluru",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 12.9716,
+          lng: 77.5946,
+        },
+        {
+          id: "IN-DEL",
+          name: "New Delhi",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 28.6139,
+          lng: 77.209,
+        },
+        {
+          id: "IN-MUM",
+          name: "Mumbai",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 19.076,
+          lng: 72.8777,
+        },
+        {
+          id: "IN-CHE",
+          name: "Chennai",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 13.0827,
+          lng: 80.2707,
+        },
+        {
+          id: "IN-KOL",
+          name: "Kolkata",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 22.5726,
+          lng: 88.3639,
+        },
+        {
+          id: "IN-HYD",
+          name: "Hyderabad",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 17.385,
+          lng: 78.4867,
+        },
+        {
+          id: "IN-GUW",
+          name: "Guwahati",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 26.1445,
+          lng: 91.7362,
+        },
+        {
+          id: "IN-PUR",
+          name: "Puri (cyclone coast)",
+          country: "India",
+          flag: "🇮🇳",
+          lat: 19.8135,
+          lng: 85.8312,
+        },
+        // Pakistan
+        {
+          id: "PK-KHI",
+          name: "Karachi",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 24.8607,
+          lng: 67.0011,
+        },
+        {
+          id: "PK-LHE",
+          name: "Lahore",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 31.5497,
+          lng: 74.3436,
+        },
+        {
+          id: "PK-ISB",
+          name: "Islamabad",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 33.6844,
+          lng: 73.0479,
+        },
+        {
+          id: "PK-PEW",
+          name: "Peshawar",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 34.0151,
+          lng: 71.5249,
+        },
+        {
+          id: "PK-MUZ",
+          name: "Muzaffarabad (seismic zone)",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 34.37,
+          lng: 73.4711,
+        },
+        {
+          id: "PK-SUK",
+          name: "Sukkur (flood-prone)",
+          country: "Pakistan",
+          flag: "🇵🇰",
+          lat: 27.7052,
+          lng: 68.8574,
+        },
+        // Japan
+        {
+          id: "JP-TYO",
+          name: "Tokyo",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 35.6762,
+          lng: 139.6503,
+        },
+        {
+          id: "JP-OSA",
+          name: "Osaka",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 34.6937,
+          lng: 135.5023,
+        },
+        {
+          id: "JP-KYO",
+          name: "Kyoto",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 35.0116,
+          lng: 135.7681,
+        },
+        {
+          id: "JP-SEN",
+          name: "Sendai (2011 tsunami coast)",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 38.2682,
+          lng: 140.8694,
+        },
+        {
+          id: "JP-FUK",
+          name: "Fukuoka",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 33.5904,
+          lng: 130.4017,
+        },
+        {
+          id: "JP-SAP",
+          name: "Sapporo",
+          country: "Japan",
+          flag: "🇯🇵",
+          lat: 43.0618,
+          lng: 141.3545,
+        },
+      ];
+      function locById(id) {
+        return LOCATIONS.find((l) => l.id === id);
+      }
+
+      /* Real, publicly published national emergency numbers — used only for display in the
+   Preparedness and Women & Child Safety panels. */
+      const HELPLINES = {
+        India: [
+          ["National Emergency (Police/Fire/Ambulance)", "112"],
+          ["Women Helpline", "1091"],
+          ["Women Helpline (Domestic Abuse)", "181"],
+          ["Child Helpline", "1098"],
+          ["Disaster Management (NDMA)", "1078"],
+          ["Ambulance", "108"],
+        ],
+        Pakistan: [
+          ["Police", "15"],
+          ["Rescue / Ambulance (Edhi & 1122)", "1122"],
+          ["Women Helpline (Madadgaar)", "1043"],
+          ["Child Protection Helpline", "1121"],
+          ["National Disaster Mgmt Authority", "051-9205037"],
+        ],
+        Japan: [
+          ["Police", "110"],
+          ["Fire / Ambulance", "119"],
+          ["Japan Coast Guard", "118"],
+          ["Child Consultation Centre", "189"],
+          ["Domestic Violence Hotline", "0570-0-55210"],
+        ],
+      };
+
+      /* ---------------------------- STATE ---------------------------- */
+      const ZONES = [
+        {
+          id: "A",
+          name: "Zone A · Riverside (Yelahanka)",
+          lat: 13.1007,
+          lng: 77.5963,
+          population: 4280,
+          hazard: "Flood",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+        {
+          id: "B",
+          name: "Zone B · Hillside (Nandi Foothills)",
+          lat: 13.25,
+          lng: 77.68,
+          population: 3110,
+          hazard: "Landslide",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+        {
+          id: "C",
+          name: "Zone C · Eastern Belt (Whitefield)",
+          lat: 12.9698,
+          lng: 77.75,
+          population: 5230,
+          hazard: "Heavy Rainfall",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+        {
+          id: "D",
+          name: "Zone D · Old City (Chickpet)",
+          lat: 12.9667,
+          lng: 77.5767,
+          population: 6720,
+          hazard: "Urban Flood",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+        {
+          id: "E",
+          name: "Zone E · Forest Edge (Bannerghatta)",
+          lat: 12.8,
+          lng: 77.5773,
+          population: 1850,
+          hazard: "Forest Fire",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+        {
+          id: "F",
+          name: "Zone F · Industrial (Peenya)",
+          lat: 13.028,
+          lng: 77.52,
+          population: 2990,
+          hazard: "Heatwave",
+          riskScore: 0,
+          riskLevel: "LOW",
+        },
+      ];
+
+      const HAZARDS = [
+        { id: "flood", label: "Flood", icon: "🌊" },
+        { id: "flashflood", label: "Flash Flood", icon: "🌊" },
+        { id: "landslide", label: "Landslide", icon: "⛰️" },
+        { id: "cyclone", label: "Cyclone", icon: "🌀" },
+        { id: "rainfall", label: "Heavy Rainfall", icon: "🌧️" },
+        { id: "urbanflood", label: "Urban Flooding", icon: "🏙️" },
+        { id: "fire", label: "Forest Fire", icon: "🔥" },
+        { id: "heatwave", label: "Extreme Heat", icon: "🌡️" },
+      ];
+
+      function defaultState() {
+        const zones = JSON.parse(JSON.stringify(ZONES));
+        // Seed each zone with a plausible, non-zero live risk reading so the dashboard,
+        // map and charts never open on an empty/all-zero state.
+        const seedInputs = {
+          A: {
+            hazard: "flood",
+            i: { rainfall: 96, waterLevel: 2.4, soilMoisture: 58 },
+          },
+          B: {
+            hazard: "landslide",
+            i: { rainfall: 140, soilMoisture: 66, slope: 27 },
+          },
+          C: { hazard: "rainfall", i: { rainfall: 88, duration: 14 } },
+          D: {
+            hazard: "urbanflood",
+            i: { rainfall: 62, drainage: 55, waterLevel: 0.4 },
+          },
+          E: {
+            hazard: "fire",
+            i: { temperature: 33, humidity: 34, windSpeed: 22 },
+          },
+          F: { hazard: "heatwave", i: { temperature: 38, humidity: 40 } },
+        };
+        zones.forEach((z) => {
+          const seed = seedInputs[z.id];
+          if (seed) {
+            const r = computeRisk(seed.hazard, seed.i);
+            z.riskScore = r.score;
+            z.riskLevel = r.level;
+          }
+        });
+        return {
+          zones,
+          shelters: [
+            {
+              id: "SH-01",
+              name: "Govt. Higher Primary School",
+              zoneId: "A",
+              lat: 13.1035,
+              lng: 77.601,
+              capacity: 500,
+              occupied: 120,
+              medical: true,
+              womenChild: true,
+            },
+            {
+              id: "SH-02",
+              name: "Community Hall",
+              zoneId: "B",
+              lat: 13.254,
+              lng: 77.685,
+              capacity: 300,
+              occupied: 40,
+              medical: false,
+              womenChild: false,
+            },
+            {
+              id: "SH-03",
+              name: "District Sports Complex",
+              zoneId: "C",
+              lat: 12.973,
+              lng: 77.755,
+              capacity: 800,
+              occupied: 610,
+              medical: true,
+              womenChild: true,
+            },
+            {
+              id: "SH-04",
+              name: "Municipal College Block",
+              zoneId: "D",
+              lat: 12.97,
+              lng: 77.58,
+              capacity: 600,
+              occupied: 180,
+              medical: true,
+              womenChild: true,
+            },
+            {
+              id: "SH-05",
+              name: "Forest Range Office Grounds",
+              zoneId: "E",
+              lat: 12.804,
+              lng: 77.581,
+              capacity: 250,
+              occupied: 0,
+              medical: false,
+              womenChild: false,
+            },
+            {
+              id: "SH-06",
+              name: "Industrial Estate Hall",
+              zoneId: "F",
+              lat: 13.031,
+              lng: 77.524,
+              capacity: 400,
+              occupied: 60,
+              medical: false,
+              womenChild: true,
+            },
+          ],
+          hospitals: [
+            {
+              id: "H-01",
+              name: "District Hospital",
+              zoneId: "A",
+              lat: 13.098,
+              lng: 77.592,
+            },
+            {
+              id: "H-02",
+              name: "Primary Health Centre",
+              zoneId: "B",
+              lat: 13.246,
+              lng: 77.675,
+            },
+            {
+              id: "H-03",
+              name: "Trauma Care Centre",
+              zoneId: "C",
+              lat: 12.966,
+              lng: 77.746,
+            },
+            {
+              id: "H-04",
+              name: "City General Hospital",
+              zoneId: "D",
+              lat: 12.971,
+              lng: 77.572,
+            },
+            {
+              id: "H-05",
+              name: "South Community Hospital",
+              zoneId: "E",
+              lat: 12.805,
+              lng: 77.573,
+            },
+            {
+              id: "H-06",
+              name: "Peenya Industrial Hospital",
+              zoneId: "F",
+              lat: 13.025,
+              lng: 77.517,
+            },
+          ],
+          teams: [
+            {
+              id: "R-01",
+              name: "Rescue Team Alpha",
+              vehicle: "Boat-01",
+              status: "available",
+              zoneId: "A",
+            },
+            {
+              id: "R-02",
+              name: "Rescue Team Bravo",
+              vehicle: "4x4-02",
+              status: "available",
+              zoneId: "B",
+            },
+            {
+              id: "R-03",
+              name: "Rescue Team Coastal",
+              vehicle: "Boat-03",
+              status: "available",
+              zoneId: "C",
+            },
+            {
+              id: "R-04",
+              name: "Rescue Team Delta",
+              vehicle: "Truck-04",
+              status: "available",
+              zoneId: "D",
+            },
+            {
+              id: "R-05",
+              name: "Fire & Forest Unit",
+              vehicle: "FireTruck-05",
+              status: "available",
+              zoneId: "E",
+            },
+            {
+              id: "R-06",
+              name: "Medical Response Unit",
+              vehicle: "Ambulance-06",
+              status: "available",
+              zoneId: "F",
+            },
+          ],
+          sos: [
+            {
+              id: "SOS-1001",
+              name: "Demo Record (resolved)",
+              age: 41,
+              phone: "",
+              zoneId: "C",
+              people: 3,
+              types: ["Water"],
+              message: "Sample resolved case shown for reference.",
+              priority: "MEDIUM",
+              status: "rescued",
+              assignedTeam: null,
+              time: new Date(Date.now() - 3 * 3600 * 1000).toLocaleString(),
+              medicalAssist: false,
+              gps: null,
+              photo: null,
+              route: null,
+            },
+          ],
+          alerts: [
+            {
+              id: "AL-1000",
+              zoneId: "C",
+              level: "MEDIUM",
+              score: 46,
+              hazard: "Heavy Rainfall",
+              icon: "🌧️",
+              title:
+                "HEAVY RAINFALL ADVISORY — Zone C · Eastern Belt (Whitefield)",
+              message:
+                "AI risk score 46/100 (MEDIUM). Continued monitoring in effect; residents should stay updated on drainage conditions.",
+              time: new Date(Date.now() - 5 * 3600 * 1000).toLocaleString(),
+            },
+          ],
+          inventory: { food: 2400, water: 3600, medicine: 900, blankets: 1500 },
+          reliefLog: [],
+          riskHistory: [],
+          recovery: {
+            rescued: 3,
+            relocated: 3,
+            buildingsDamaged: 126,
+            roadsBlocked: 14,
+            medicalCases: 62,
+          },
+          sosCounter: 1001,
+          log: [
+            {
+              t: new Date(Date.now() - 5 * 3600 * 1000).toLocaleTimeString(),
+              text: "Platform initialised — baseline risk readings generated for all 6 zones.",
+            },
+          ],
+          trustedContact: { name: "", phone: "" },
+        };
+      }
+
+      let STATE = null;
+      function loadState() {
+        try {
+          const raw = localStorage.getItem("rakshanetx_state_v3");
+          if (raw) {
+            STATE = JSON.parse(raw);
+            if (!STATE.trustedContact)
+              STATE.trustedContact = { name: "", phone: "" };
+            return;
+          }
+        } catch (e) {}
+        STATE = defaultState();
+      }
+      function saveState() {
+        try {
+          localStorage.setItem("rakshanetx_state_v3", JSON.stringify(STATE));
+        } catch (e) {
+          console.warn("save failed", e);
+        }
+      }
+
+      function resetDemo() {
+        if (
+          !confirm(
+            "Reset all demo data to the initial state? This clears SOS requests, alerts and logs.",
+          )
+        )
+          return;
+        STATE = defaultState();
+        saveState();
+        renderAll();
+        checkSirenAutoState();
+        toast("Demo data reset", "🔄");
+      }
+      function zoneById(id) {
+        return STATE.zones.find((z) => z.id === id);
+      }
+      function shelterById(id) {
+        return STATE.shelters.find((s) => s.id === id);
+      }
+      function teamById(id) {
+        return STATE.teams.find((t) => t.id === id);
+      }
+      function pushLog(text) {
+        STATE.log.unshift({ t: new Date().toLocaleTimeString(), text });
+        STATE.log = STATE.log.slice(0, 60);
+      }
+
+      function toast(msg, icon, level) {
+        const host = document.getElementById("toastHost");
+        const el = document.createElement("div");
+        el.className = "toast" + (level === "CRITICAL" ? " CRITICAL" : "");
+        el.innerHTML = "<b>" + (icon || "✅") + "</b>&nbsp; " + msg;
+        host.appendChild(el);
+        setTimeout(() => {
+          el.style.opacity = "0";
+          el.style.transition = "opacity .3s";
+          setTimeout(() => el.remove(), 300);
+        }, 4200);
+      }
+
+      /* ---------------------------- RISK ENGINE ----------------------------
+   Transparent, explainable weighted-scoring model (not a black box).
+   This is a rule-based prototype standing in for a trained classifier —
+   described honestly as such, not as a live ML model.
+------------------------------------------------------------------------ */
+      function clampNorm(v, max) {
+        v = Number(v) || 0;
+        return Math.max(0, Math.min(100, (v / max) * 100));
+      }
+      function computeRisk(hazardId, inputs) {
+        let score = 0;
+        switch (hazardId) {
+          case "flood":
+            score =
+              0.4 * clampNorm(inputs.rainfall, 220) +
+              0.4 * clampNorm(inputs.waterLevel, 7) +
+              0.2 * clampNorm(inputs.soilMoisture, 100);
+            break;
+          case "flashflood":
+            score =
+              0.55 * clampNorm(inputs.rainfall, 150) +
+              0.3 * clampNorm(inputs.waterLevel, 5) +
+              0.15 * clampNorm(inputs.drainage, 100);
+            break;
+          case "landslide":
+            score =
+              0.35 * clampNorm(inputs.rainfall, 220) +
+              0.35 * clampNorm(inputs.soilMoisture, 100) +
+              0.3 * clampNorm(inputs.slope, 60);
+            break;
+          case "cyclone":
+            score =
+              0.55 * clampNorm(inputs.windSpeed, 220) +
+              0.3 * clampNorm(inputs.rainfall, 220) +
+              0.15 * clampNorm(inputs.pressureDrop, 60);
+            break;
+          case "rainfall":
+            score =
+              0.6 * clampNorm(inputs.rainfall, 220) +
+              0.4 * clampNorm(inputs.duration, 48);
+            break;
+          case "urbanflood":
+            score =
+              0.45 * clampNorm(inputs.rainfall, 180) +
+              0.3 * clampNorm(inputs.drainage, 100) +
+              0.25 * clampNorm(inputs.waterLevel, 4);
+            break;
+          case "fire":
+            score =
+              0.35 * clampNorm(Math.max(0, inputs.temperature - 15), 30) +
+              0.35 * (100 - clampNorm(inputs.humidity, 100)) +
+              0.3 * clampNorm(inputs.windSpeed, 120);
+            break;
+          case "heatwave":
+            score =
+              0.6 * clampNorm(Math.max(0, inputs.temperature - 24), 22) +
+              0.4 * clampNorm(inputs.humidity, 100);
+            break;
+          default:
+            score = 0;
+        }
+        score = Math.round(Math.max(0, Math.min(100, score)));
+        let level = "LOW";
+        if (score >= 80) level = "CRITICAL";
+        else if (score >= 55) level = "HIGH";
+        else if (score >= 30) level = "MEDIUM";
+        return { score, level };
+      }
+      function recommendedActions(level) {
+        const base = {
+          LOW: ["Continue routine monitoring", "No public action required"],
+          MEDIUM: [
+            "Increase monitoring frequency",
+            "Alert local ward officers",
+            "Pre-position basic supplies",
+          ],
+          HIGH: [
+            "Issue public advisory",
+            "Prepare evacuation centers",
+            "Put rescue teams on standby",
+          ],
+          CRITICAL: [
+            "Issue emergency warning",
+            "Begin evacuation",
+            "Deploy rescue teams",
+            "Move medical & relief supplies to shelters",
+          ],
+        };
+        return base[level];
+      }
+      function riskColor(level) {
+        return {
+          LOW: "var(--good)",
+          MEDIUM: "var(--warn)",
+          HIGH: "var(--bad)",
+          CRITICAL: "var(--crit)",
+        }[level];
+      }
+      function riskHex(level) {
+        return {
+          LOW: "#16a34a",
+          MEDIUM: "#d97706",
+          HIGH: "#dc2626",
+          CRITICAL: "#7f1d1d",
+        }[level];
+      }
+
+      /* ---------------------------- TABS / VIEWS ---------------------------- */
+      const VIEWS = [
+        { id: "dashboard", label: "🖥️ Dashboard" },
+        { id: "risk", label: "🤖 Risk Engine · Before" },
+        { id: "map", label: "🗺️ Live GPS Map" },
+        { id: "router", label: "📍 Location Router" },
+        { id: "alerts", label: "🚨 Early Warning · During" },
+        { id: "sos", label: "🆘 Citizen SOS · During" },
+        { id: "rescue", label: "🚑 Rescue Coord. · During" },
+        { id: "shelters", label: "🏠 Shelters" },
+        { id: "safety", label: "👩‍👧 Women & Child Safety" },
+        { id: "relief", label: "📦 Relief · After" },
+        { id: "evac", label: "🧭 Evacuation Planner" },
+        { id: "recovery", label: "📊 Recovery · After" },
+        { id: "assistant", label: "💬 Disaster Assistant" },
+      ];
+      function buildTabs() {
+        const host = document.getElementById("tabs");
+        host.innerHTML = VIEWS.map(
+          (v) =>
+            `<button class="tab-btn" data-view="${v.id}" type="button">${v.label}</button>`,
+        ).join("");
+        // delegated click so this never goes stale across re-renders
+        host.addEventListener("click", (e) => {
+          const btn = e.target.closest(".tab-btn");
+          if (!btn) return;
+          showView(btn.dataset.view);
+        });
+      }
+      function showView(id) {
+        document
+          .querySelectorAll(".tab-btn")
+          .forEach((b) => b.classList.toggle("active", b.dataset.view === id));
+        document
+          .querySelectorAll(".view")
+          .forEach((v) => v.classList.toggle("active", v.id === "view-" + id));
+        try {
+          if (id === "dashboard") renderDashboard();
+          if (id === "map") renderMap("map-main");
+          if (id === "router") renderRouter();
+          if (id === "alerts") renderAlerts();
+          if (id === "rescue") renderRescue();
+          if (id === "shelters") renderShelters();
+          if (id === "safety") renderSafety();
+          if (id === "relief") renderRelief();
+          if (id === "recovery") renderRecovery();
+          if (id === "evac") renderEvac();
+        } catch (err) {
+          console.error("showView render error", id, err);
+        }
+        // Leaflet maps that render while their tab is hidden come out mis-sized/overlapping;
+        // invalidateSize() after the tab becomes visible fixes that reliably.
+        setTimeout(() => {
+          Object.values(MapRegistry).forEach((reg) => {
+            if (reg && reg.map) reg.map.invalidateSize();
+          });
+        }, 60);
+        window.scrollTo({ top: 0, behavior: "instant" });
+      }
+      window.addEventListener("resize", () => {
+        Object.values(MapRegistry).forEach((reg) => {
+          if (reg && reg.map) reg.map.invalidateSize();
+        });
+      });
+      function el(html) {
+        const d = document.createElement("div");
+        d.innerHTML = html;
+        return d.firstElementChild;
+      }
+
+      function buildViews() {
+        const host = document.getElementById("views");
+        host.appendChild(buildDashboardView());
+        host.appendChild(buildRiskView());
+        host.appendChild(buildMapView());
+        host.appendChild(buildRouterView());
+        host.appendChild(buildAlertsView());
+        host.appendChild(buildSosView());
+        host.appendChild(buildRescueView());
+        host.appendChild(buildSheltersView());
+        host.appendChild(buildSafetyView());
+        host.appendChild(buildReliefView());
+        host.appendChild(buildEvacView());
+        host.appendChild(buildRecoveryView());
+        host.appendChild(buildAssistantView());
+        const foot = el(
+          `<div class="foot">RakshaNet-X prototype · SIH 2026 · Disaster Management (SIH26206) · Zone-level demo data is mapped onto Bengaluru, India; the Location Router covers real cities across India, Pakistan and Japan &nbsp;•&nbsp; <a href="#" id="resetLink" style="color:var(--muted)">Reset demo data</a></div>`,
+        );
+        host.appendChild(foot);
+        document.getElementById("resetLink").addEventListener("click", (e) => {
+          e.preventDefault();
+          resetDemo();
+        });
+      }
+
+      /* ========================= LEAFLET MAP ENGINE ========================= */
+      const MapRegistry = {}; // containerId -> { map, layer }
+      function getOrCreateMap(containerId, center, zoom) {
+        if (MapRegistry[containerId] && MapRegistry[containerId].map)
+          return MapRegistry[containerId];
+        const container = document.getElementById(containerId);
+        if (!container) return null;
+        const map = L.map(containerId, { scrollWheelZoom: true }).setView(
+          center || [13.02, 77.62],
+          zoom || 10.4,
+        );
+        L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+          maxZoom: 19,
+          attribution: "&copy; OpenStreetMap contributors",
+        }).addTo(map);
+        const layer = L.layerGroup().addTo(map);
+        MapRegistry[containerId] = { map, layer };
+        return MapRegistry[containerId];
+      }
+      function divIcon(color, symbol, pulse) {
+        return L.divIcon({
+          className: "",
+          html: `<div class="divmarker${pulse ? " pulse" : ""}" style="width:26px;height:26px;background:${color};display:flex;align-items:center;justify-content:center;font-size:14px;">${symbol}</div>`,
+          iconSize: [26, 26],
+          iconAnchor: [13, 13],
+        });
+      }
+      function renderMap(containerId) {
+        const reg = getOrCreateMap(containerId);
+        if (!reg) return;
+        reg.layer.clearLayers();
+
+        STATE.zones.forEach((z) => {
+          const color = riskHex(z.riskLevel);
+          L.circle([z.lat, z.lng], {
+            radius: 2600,
+            color,
+            fillColor: color,
+            fillOpacity: 0.25,
+            weight: 2,
+          }).addTo(reg.layer);
+          const m = L.marker([z.lat, z.lng], {
+            icon: divIcon(color, "⬤", false),
+          }).addTo(reg.layer);
+          m.bindPopup(
+            `<b>${z.name}</b><br>Population: ${z.population.toLocaleString()}<br>Hazard: ${z.hazard}<br>Risk: <b>${z.riskLevel}</b> (${z.riskScore}/100)`,
+          );
+          m.on("click", () => showZoneDetail(z.id));
+        });
+        STATE.shelters.forEach((s) => {
+          const m = L.marker([s.lat, s.lng], {
+            icon: divIcon("#0ea5e9", "🏠", false),
+          }).addTo(reg.layer);
+          m.bindPopup(
+            `<b>🏠 ${s.name}</b><br>${s.occupied}/${s.capacity} occupied${s.medical ? "<br>🏥 Medical support on site" : ""}${s.womenChild ? "<br>👩‍👧 Women & child friendly space" : ""}`,
+          );
+        });
+        STATE.hospitals.forEach((h) => {
+          const m = L.marker([h.lat, h.lng], {
+            icon: divIcon("#16a34a", "🏥", false),
+          }).addTo(reg.layer);
+          m.bindPopup(`<b>🏥 ${h.name}</b>`);
+        });
+        STATE.teams.forEach((t) => {
+          const z = zoneById(t.zoneId);
+          const sym = t.vehicle.startsWith("Boat")
+            ? "🚤"
+            : t.vehicle.startsWith("Fire")
+              ? "🚒"
+              : t.vehicle.startsWith("Amb")
+                ? "🚑"
+                : "🚓";
+          const m = L.marker([z.lat + 0.01, z.lng + 0.01], {
+            icon: divIcon(
+              t.status === "available" ? "#1d4ed8" : "#94a3b8",
+              sym,
+              false,
+            ),
+          }).addTo(reg.layer);
+          m.bindPopup(
+            `<b>${t.name}</b><br>${t.vehicle}<br>Status: ${t.status}`,
+          );
+        });
+        STATE.sos
+          .filter((s) => s.status !== "rescued")
+          .forEach((s) => {
+            const lat = s.gps ? s.gps.lat : zoneById(s.zoneId).lat;
+            const lng = s.gps ? s.gps.lng : zoneById(s.zoneId).lng;
+            const critical =
+              s.priority === "CRITICAL" ||
+              (s.priority === "HIGH" && s.medicalAssist);
+            const m = L.marker([lat, lng], {
+              icon: divIcon(critical ? "#991b1b" : "#d97706", "🆘", critical),
+            }).addTo(reg.layer);
+            m.bindPopup(
+              `<b>🆘 ${s.id}</b>${s.name ? " — " + s.name : ""}${s.age ? " (" + s.age + " yrs)" : ""}<br>${s.people} people · ${s.types.join(", ")}<br>Priority: <b>${s.priority}</b><br>${s.photo ? `<img src="${s.photo}" style="width:100px;border-radius:6px;margin-top:6px">` : ""}`,
+            );
+            if (critical && s.route) {
+              const line = L.polyline(s.route.coords, {
+                color: "#dc2626",
+                weight: 4,
+                dashArray: s.route.real ? null : "8 6",
+              }).addTo(reg.layer);
+              L.marker([s.route.destLat, s.route.destLng], {
+                icon: divIcon("#16a34a", "🏥", false),
+              })
+                .addTo(reg.layer)
+                .bindPopup(
+                  `<b>Route target:</b> ${s.route.destName}<br>${s.route.distanceKm.toFixed(1)} km`,
+                );
+            }
+          });
+      }
+      function fitMapToAll(containerId) {
+        const reg = MapRegistry[containerId];
+        if (!reg) return;
+        const pts = [...STATE.zones.map((z) => [z.lat, z.lng])];
+        if (pts.length) reg.map.fitBounds(pts, { padding: [30, 30] });
+      }
+      function showZoneDetail(zoneId) {
+        const panel = document.getElementById("mapZoneDetail");
+        if (!panel) {
+          showView("map");
+          setTimeout(() => showZoneDetail(zoneId), 80);
+          return;
+        }
+        const z = zoneById(zoneId);
+        const shelters = STATE.shelters.filter((s) => s.zoneId === zoneId);
+        const hospitals = STATE.hospitals.filter((h) => h.zoneId === zoneId);
+        const teams = STATE.teams.filter((t) => t.zoneId === zoneId);
+        const sosHere = STATE.sos.filter(
+          (s) => s.zoneId === zoneId && s.status !== "rescued",
+        );
+        panel.innerHTML = `
+    <h3 style="margin-top:0">${z.name} <span class="badge b-${z.riskLevel}">${z.riskLevel}</span></h3>
+    <div class="small muted">Population: ${z.population.toLocaleString()} · Primary hazard: ${z.hazard} · Risk score: ${z.riskScore}/100</div>
+    <div class="hr"></div>
+    <b class="small">🏠 Shelters (${shelters.length})</b>
+    ${shelters.map((s) => `<div class="small">${s.name} — ${s.occupied}/${s.capacity} occupied${s.womenChild ? " · 👩‍👧" : ""}</div>`).join("") || '<div class="small muted">None</div>'}
+    <div class="hr"></div>
+    <b class="small">🏥 Hospitals (${hospitals.length})</b>
+    ${hospitals.map((h) => `<div class="small">${h.name}</div>`).join("") || '<div class="small muted">None</div>'}
+    <div class="hr"></div>
+    <b class="small">🚑 Rescue Units based here (${teams.length})</b>
+    ${teams.map((t) => `<div class="small">${t.name} — ${t.vehicle} (${t.status})</div>`).join("") || '<div class="small muted">None</div>'}
+    <div class="hr"></div>
+    <b class="small">🆘 Open SOS Requests (${sosHere.length})</b>
+    ${sosHere.map((s) => `<div class="small">${s.id} — ${s.people} people — <span class="badge b-${s.status}">${s.status}</span></div>`).join("") || '<div class="small muted">None</div>'}
+  `;
+      }
+
+      /* ========================= DASHBOARD ========================= */
+      function buildDashboardView() {
+        const v = el(`<div class="view active" id="view-dashboard"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🖥️ Disaster Control Dashboard</h1>
+    <p class="page-sub">Live command-center overview — updates instantly as SOS requests, risk assessments and relief actions happen anywhere in the platform.</p>
+    <div class="critical-banner" id="criticalBanner"></div>
+    <div class="stage-strip">
+      <div class="stage-card before">
+        <b>Stage 1</b><div class="h">🔎 Before — Predict & Prepare</div>
+        <p>Multi-hazard risk scoring, preparedness checklists and hazard-zone mapping so a threat is spotted before it becomes a disaster.</p>
+        <div class="links"><button data-goto="risk" type="button">Risk Engine</button><button data-goto="map" type="button">Risk Map</button></div>
+      </div>
+      <div class="stage-card during">
+        <b>Stage 2</b><div class="h">🚨 During — Respond</div>
+        <p>Citizen SOS with live GPS, early-warning alerts + siren, safe evacuation routing and real-time rescue coordination.</p>
+        <div class="links"><button data-goto="sos" type="button">Send SOS</button><button data-goto="rescue" type="button">Rescue Coord.</button><button data-goto="alerts" type="button">Alerts</button></div>
+      </div>
+      <div class="stage-card after">
+        <b>Stage 3</b><div class="h">📈 After — Recover</div>
+        <p>Damage assessment, relief-resource dispatch tracking and recovery analytics once the immediate danger has passed.</p>
+        <div class="links"><button data-goto="relief" type="button">Relief</button><button data-goto="recovery" type="button">Recovery</button></div>
+      </div>
+    </div>
+    <div class="grid g-4" id="dashStats"></div>
+    <div class="hr"></div>
+    <div class="two-col">
+      <div class="card"><h3>🗺️ Live GPS Risk Map <span class="tag">click a zone for details</span></h3><div id="map-dash" class="leaflet-map"></div></div>
+      <div class="card"><h3>🚨 Recent Alerts</h3><div id="dashAlerts"></div></div>
+    </div>
+    <div class="hr"></div>
+    <div class="grid g-2">
+      <div class="card"><h3>📈 Risk Score Trend</h3><canvas id="chartRiskTrend" height="170"></canvas></div>
+      <div class="card"><h3>🥧 Current Zone Risk Distribution</h3><canvas id="chartRiskPie" height="170"></canvas></div>
+    </div>
+    <div class="hr"></div>
+    <div class="grid g-2">
+      <div class="card"><h3>👥 Population by Zone</h3><canvas id="chartPopulation" height="170"></canvas></div>
+      <div class="card"><h3>🧮 SOS Priority Breakdown</h3><canvas id="chartSosPriority" height="170"></canvas></div>
+    </div>
+    <div class="hr"></div>
+    <div class="card"><h3>🕓 Live Activity Feed</h3><div id="activityFeed" class="small"></div></div>
+  `;
+        v.addEventListener("click", (e) => {
+          const b = e.target.closest("button[data-goto]");
+          if (b) showView(b.dataset.goto);
+        });
+        return v;
+      }
+      let chartRiskTrend = null,
+        chartRiskPie = null,
+        chartPopulation = null,
+        chartSosPriority = null;
+      function renderDashboard() {
+        const criticalSos = STATE.sos.filter(
+          (s) => s.status !== "rescued" && s.priority === "CRITICAL",
+        );
+        const criticalZones = STATE.zones.filter(
+          (z) => z.riskLevel === "CRITICAL",
+        );
+        const banner = document.getElementById("criticalBanner");
+        if (criticalSos.length || criticalZones.length) {
+          banner.classList.add("show");
+          const parts = [];
+          if (criticalZones.length)
+            parts.push(
+              `${criticalZones.length} zone(s) at CRITICAL risk (${criticalZones.map((z) => z.name).join(", ")})`,
+            );
+          if (criticalSos.length)
+            parts.push(
+              `${criticalSos.length} CRITICAL SOS case(s) in progress (${criticalSos.map((s) => s.id).join(", ")})`,
+            );
+          banner.innerHTML = `🚨 DISASTER ACTIVE: ${parts.join(" · ")}. Siren is live — see the Rescue Coordination and Live GPS Map tabs.`;
+        } else {
+          banner.classList.remove("show");
+          banner.innerHTML = "";
+        }
+
+        const stats = document.getElementById("dashStats");
+        const activeAlerts = STATE.alerts.filter(
+          (a) => a.level === "HIGH" || a.level === "CRITICAL",
+        ).length;
+        const totalPop = STATE.zones.reduce((s, z) => s + z.population, 0);
+        const waitingSos = STATE.sos.filter(
+          (s) => s.status !== "rescued",
+        ).length;
+        const availableTeams = STATE.teams.filter(
+          (t) => t.status === "available",
+        ).length;
+        stats.innerHTML = `
+    <div class="card stat-card b-red"><div class="icon">🚨</div><div class="num">${activeAlerts}</div><div class="lbl">Active High/Critical Alerts</div></div>
+    <div class="card stat-card b-amber"><div class="icon">🆘</div><div class="num">${waitingSos}</div><div class="lbl">Open SOS Requests</div></div>
+    <div class="card stat-card b-blue"><div class="icon">🚑</div><div class="num">${availableTeams}/${STATE.teams.length}</div><div class="lbl">Rescue Teams Available</div></div>
+    <div class="card stat-card b-green"><div class="icon">👥</div><div class="num">${totalPop.toLocaleString()}</div><div class="lbl">Population Monitored</div></div>
+  `;
+        renderMap("map-dash");
+
+        const al = document.getElementById("dashAlerts");
+        const recent = STATE.alerts.slice(0, 5);
+        al.innerHTML = recent.length
+          ? recent.map(alertHTML).join("")
+          : `<p class="muted small">No alerts yet — run the Risk Engine to generate one.</p>`;
+
+        const hist = STATE.riskHistory.slice(-20);
+        const ctx1 = document.getElementById("chartRiskTrend");
+        if (chartRiskTrend) chartRiskTrend.destroy();
+        chartRiskTrend = new Chart(ctx1, {
+          type: "line",
+          data: {
+            labels: hist.length
+              ? hist.map((h) => h.t)
+              : STATE.zones.map((z) => z.id),
+            datasets: [
+              {
+                label: "Risk Score",
+                data: hist.length
+                  ? hist.map((h) => h.score)
+                  : STATE.zones.map((z) => z.riskScore),
+                borderColor: "#1d4ed8",
+                backgroundColor: "rgba(29,78,216,.15)",
+                tension: 0.3,
+                fill: true,
+                pointRadius: 3,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: { legend: { display: false } },
+            scales: { y: { min: 0, max: 100 } },
+          },
+        });
+
+        const dist = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+        STATE.zones.forEach((z) => dist[z.riskLevel]++);
+        const ctx2 = document.getElementById("chartRiskPie");
+        if (chartRiskPie) chartRiskPie.destroy();
+        chartRiskPie = new Chart(ctx2, {
+          type: "doughnut",
+          data: {
+            labels: Object.keys(dist),
+            datasets: [
+              {
+                data: Object.values(dist),
+                backgroundColor: ["#16a34a", "#d97706", "#dc2626", "#991b1b"],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { position: "bottom", labels: { boxWidth: 10 } },
+            },
+          },
+        });
+
+        const ctx3 = document.getElementById("chartPopulation");
+        if (chartPopulation) chartPopulation.destroy();
+        chartPopulation = new Chart(ctx3, {
+          type: "bar",
+          data: {
+            labels: STATE.zones.map((z) => z.id),
+            datasets: [
+              {
+                label: "Population",
+                data: STATE.zones.map((z) => z.population),
+                backgroundColor: STATE.zones.map((z) => riskHex(z.riskLevel)),
+              },
+            ],
+          },
+          options: { plugins: { legend: { display: false } } },
+        });
+
+        const prio = { LOW: 0, MEDIUM: 0, HIGH: 0, CRITICAL: 0 };
+        STATE.sos.forEach((s) => prio[s.priority]++);
+        const ctx4 = document.getElementById("chartSosPriority");
+        if (chartSosPriority) chartSosPriority.destroy();
+        chartSosPriority = new Chart(ctx4, {
+          type: "bar",
+          data: {
+            labels: Object.keys(prio),
+            datasets: [
+              {
+                label: "SOS Requests",
+                data: Object.values(prio),
+                backgroundColor: ["#16a34a", "#d97706", "#dc2626", "#991b1b"],
+              },
+            ],
+          },
+          options: { indexAxis: "y", plugins: { legend: { display: false } } },
+        });
+
+        const feed = document.getElementById("activityFeed");
+        feed.innerHTML = STATE.log.length
+          ? STATE.log
+              .slice(0, 15)
+              .map(
+                (l) =>
+                  `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><span class="muted">${l.t}</span> — ${l.text}</div>`,
+              )
+              .join("")
+          : `<p class="muted small">No activity yet.</p>`;
+      }
+      function alertHTML(a) {
+        return `<div class="alert-item ${a.level}">
+    <div><b>${a.icon || "🚨"} ${a.title}</b></div>
+    <div class="small">${a.message}</div>
+    <div class="t">${a.time} · Zone ${a.zoneId} · <span class="badge b-${a.level}">${a.level}</span></div>
+  </div>`;
+      }
+
+      /* ========================= RISK ENGINE (BEFORE STAGE) ========================= */
+      function buildRiskView() {
+        const v = el(`<div class="view" id="view-risk"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🤖 Multi-Hazard AI Risk Assessment Engine <span class="chip">BEFORE</span></h1>
+    <p class="page-sub">Flood · Flash Flood · Landslide · Cyclone · Heavy Rainfall · Urban Flooding · Forest Fire · Extreme Heat. This is a transparent rule-based scoring model (a real deployment would train a classifier on historical sensor data) — select a hazard, enter live conditions, and run the assessment.</p>
+    <div class="pill-row" id="hazardPills"></div>
+    <div class="two-col">
+      <div class="card">
+        <h3>📥 Live Condition Inputs</h3>
+        <label>Zone</label><select id="riskZone"></select>
+        <div id="riskInputs"></div>
+        <button class="btn block" style="margin-top:14px" id="runRiskBtn" type="button">▶ Run Risk Analysis</button>
+      </div>
+      <div class="card"><h3>📤 Assessment Result</h3><div id="riskResult"><p class="muted small">Run an assessment to see the AI risk score, hazard classification and recommended actions.</p></div></div>
+    </div>
+    <div class="hr"></div>
+    <div class="card">
+      <h3>✅ Preparedness Checklist <span class="tag">real-world guidance</span></h3>
+      <div class="grid g-3">
+        <div>
+          <b class="small">Household kit</b>
+          <ul class="small">
+            <li>3 days of water (4L/person/day) and non-perishable food</li>
+            <li>Battery/hand-crank radio + power bank + torch</li>
+            <li>First-aid kit, essential medicines, copies of ID documents</li>
+          </ul>
+        </div>
+        <div>
+          <b class="small">Before a warning is issued</b>
+          <ul class="small">
+            <li>Know your zone's shelter and hospital (see Live GPS Map)</li>
+            <li>Agree a family meeting point and an out-of-area contact</li>
+            <li>Keep phones charged; save local emergency numbers (see Women & Child Safety tab)</li>
+          </ul>
+        </div>
+        <div>
+          <b class="small">Vulnerable members</b>
+          <ul class="small">
+            <li>Plan extra time/help for elderly, disabled, pregnant or very young family members</li>
+            <li>Keep child ID tags / info cards ready for evacuation</li>
+            <li>Identify the nearest women-and-child-friendly shelter in advance</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+        return v;
+      }
+      const HAZARD_FIELDS = {
+        flood: [
+          ["rainfall", "Rainfall (mm, 24h)", 150],
+          ["waterLevel", "Water Level (m)", 3.5],
+          ["soilMoisture", "Soil Moisture (%)", 60],
+        ],
+        flashflood: [
+          ["rainfall", "Rainfall Intensity (mm/hr)", 60],
+          ["waterLevel", "Stream Water Level (m)", 2.5],
+          ["drainage", "Drainage Blockage (%)", 40],
+        ],
+        landslide: [
+          ["rainfall", "Rainfall (mm, 24h)", 150],
+          ["soilMoisture", "Soil Moisture (%)", 70],
+          ["slope", "Slope Angle (°)", 30],
+        ],
+        cyclone: [
+          ["windSpeed", "Wind Speed (km/h)", 90],
+          ["rainfall", "Rainfall (mm, 24h)", 120],
+          ["pressureDrop", "Pressure Drop (hPa)", 20],
+        ],
+        rainfall: [
+          ["rainfall", "Rainfall (mm, 24h)", 100],
+          ["duration", "Duration (hours)", 12],
+        ],
+        urbanflood: [
+          ["rainfall", "Rainfall (mm, 3h)", 80],
+          ["drainage", "Drainage Capacity Used (%)", 70],
+          ["waterLevel", "Street Water Level (m)", 0.6],
+        ],
+        fire: [
+          ["temperature", "Temperature (°C)", 36],
+          ["humidity", "Humidity (%)", 25],
+          ["windSpeed", "Wind Speed (km/h)", 35],
+        ],
+        heatwave: [
+          ["temperature", "Temperature (°C)", 42],
+          ["humidity", "Humidity (%)", 55],
+        ],
+      };
+      let currentHazard = "flood";
+      function renderHazardPills() {
+        const host = document.getElementById("hazardPills");
+        host.innerHTML = HAZARDS.map(
+          (h) =>
+            `<button class="pill ${h.id === currentHazard ? "active" : ""}" data-h="${h.id}" type="button">${h.icon} ${h.label}</button>`,
+        ).join("");
+      }
+      function renderRiskInputs() {
+        const zoneSel = document.getElementById("riskZone");
+        if (zoneSel && !zoneSel.options.length) {
+          zoneSel.innerHTML = STATE.zones
+            .map((z) => `<option value="${z.id}">${z.name}</option>`)
+            .join("");
+        }
+        const host = document.getElementById("riskInputs");
+        const fields = HAZARD_FIELDS[currentHazard];
+        host.innerHTML = fields
+          .map(
+            (f) =>
+              `<label>${f[1]}</label><input type="number" step="0.1" id="rf_${f[0]}" value="${f[2]}">`,
+          )
+          .join("");
+      }
+      function bindRiskEngine() {
+        // delegated: pills live inside #hazardPills which never gets replaced wholesale after init
+        document
+          .getElementById("hazardPills")
+          .addEventListener("click", (e) => {
+            const btn = e.target.closest(".pill");
+            if (!btn) return;
+            currentHazard = btn.dataset.h;
+            renderHazardPills();
+            renderRiskInputs();
+          });
+        document.getElementById("runRiskBtn").addEventListener("click", () => {
+          const zoneId = document.getElementById("riskZone").value;
+          const fields = HAZARD_FIELDS[currentHazard];
+          const inputs = {};
+          fields.forEach((f) => {
+            inputs[f[0]] =
+              parseFloat(document.getElementById("rf_" + f[0]).value) || 0;
+          });
+          const { score, level } = computeRisk(currentHazard, inputs);
+          const zone = zoneById(zoneId);
+          zone.riskScore = score;
+          zone.riskLevel = level;
+          zone.hazard = HAZARDS.find((h) => h.id === currentHazard).label;
+          STATE.riskHistory.push({
+            t: new Date().toLocaleTimeString(),
+            zoneId,
+            hazard: zone.hazard,
+            score,
+            level,
+          });
+          STATE.riskHistory = STATE.riskHistory.slice(-40);
+
+          const actions = recommendedActions(level);
+          const resultHost = document.getElementById("riskResult");
+          resultHost.innerHTML = `
+      <div class="risk-gauge">
+        <div class="score" style="color:${riskColor(level)}">${score}<span style="font-size:16px;color:var(--muted)">/100</span></div>
+        <div class="lvl"><span class="badge b-${level}">${level} RISK</span></div>
+        <div class="small muted" style="margin-top:6px">${zone.name} · ${zone.hazard}</div>
+      </div>
+      <div class="hr"></div>
+      <b class="small">Recommended Actions</b>
+      <ul class="small">${actions.map((a) => `<li>${a}</li>`).join("")}</ul>
+      ${level === "HIGH" || level === "CRITICAL" ? `<button class="btn bad block" id="issueAlertBtn" type="button">🚨 Issue Early Warning Alert for ${zone.name}</button>` : `<p class="small muted">Risk is below the alert threshold — no warning issued, siren stays silent.</p>`}
+    `;
+          pushLog(
+            `Risk analysis run for <b>${zone.name}</b> (${zone.hazard}): score ${score} → <b>${level}</b>`,
+          );
+          if (level === "HIGH" || level === "CRITICAL") {
+            document
+              .getElementById("issueAlertBtn")
+              .addEventListener("click", () => {
+                issueAlert(zone, level, score, currentHazard);
+                toast("Emergency alert issued for " + zone.name, "🚨", level);
+              });
+          }
+          saveState();
+          renderDashboard();
+          checkSirenAutoState();
+        });
+      }
+      function issueAlert(zone, level, score, hazardId) {
+        const hz = HAZARDS.find((h) => h.id === hazardId);
+        const id = "AL-" + Math.floor(1000 + Math.random() * 9000);
+        STATE.alerts.unshift({
+          id,
+          zoneId: zone.id,
+          level,
+          score,
+          hazard: hz.label,
+          icon: hz.icon,
+          title: `${hz.label.toUpperCase()} WARNING — ${zone.name}`,
+          message: `AI risk score ${score}/100 (${level}). Residents in ${zone.name} advised to follow evacuation guidance and move to the nearest safe shelter.`,
+          time: new Date().toLocaleString(),
+        });
+        pushLog(
+          `🚨 Alert <b>${id}</b> issued for <b>${zone.name}</b> — ${level}`,
+        );
+        saveState();
+        renderAlerts();
+        renderDashboard();
+        checkSirenAutoState();
+      }
+
+      /* ========================= MAP TAB (DURING) ========================= */
+      function buildMapView() {
+        const v = el(`<div class="view" id="view-map"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🗺️ Live GPS Disaster Map</h1>
+    <p class="page-sub">Real OpenStreetMap tiles via Leaflet — colour = live risk level. Click any zone marker for details. Critical SOS cases show a pulsing marker with the live route drawn to the nearest hospital.</p>
+    <div class="two-col">
+      <div class="card"><div id="map-main" class="leaflet-map" style="height:520px"></div>
+        <div class="legend">
+          <span><span class="dot" style="background:#16a34a"></span>Low</span>
+          <span><span class="dot" style="background:#d97706"></span>Medium</span>
+          <span><span class="dot" style="background:#dc2626"></span>High</span>
+          <span><span class="dot" style="background:#7f1d1d"></span>Critical</span>
+          <span>🏠 Shelter</span><span>🏥 Hospital</span><span>🚑 Rescue Unit</span><span>🆘 Active SOS (pulsing = critical, red route = to hospital)</span>
+        </div>
+      </div>
+      <div class="card"><h3>📍 Zone Details</h3><div id="mapZoneDetail" class="side-panel">Click a zone on the map to see details here.</div></div>
+    </div>
+  `;
+        return v;
+      }
+
+      /* ========================= LOCATION ROUTER (From → To, real distance) ========================= */
+      function buildRouterView() {
+        const v = el(`<div class="view" id="view-router"></div>`);
+        const optionsHtml = (val) => {
+          const byCountry = {};
+          LOCATIONS.forEach((l) => {
+            (byCountry[l.country] = byCountry[l.country] || []).push(l);
+          });
+          return Object.keys(byCountry)
+            .map(
+              (c) =>
+                `<optgroup label="${byCountry[c][0].flag} ${c}">${byCountry[c]
+                  .map(
+                    (l) =>
+                      `<option value="${l.id}" ${l.id === val ? "selected" : ""}>${l.name}</option>`,
+                  )
+                  .join("")}</optgroup>`,
+            )
+            .join("");
+        };
+        v.innerHTML = `
+    <h1 class="page-title">📍 Location Router — Exact From → To Distance</h1>
+    <p class="page-sub">Pick any two real locations across India, Pakistan and Japan (or use your own live GPS as the starting point). The router calculates the exact straight-line distance immediately, then fetches a real road route and driving distance/time, and draws both endpoints and the path on their own dedicated map — this map never overlaps with the other tabs' maps.</p>
+    <div class="card">
+      <div class="grid g-3">
+        <div>
+          <label>From</label>
+          <select id="routeFrom">${optionsHtml("IN-BLR")}</select>
+          <button class="btn sm outline" id="routeUseGps" type="button" style="margin-top:8px">📍 Use my live GPS as "From"</button>
+          <div class="small muted" id="routeGpsStatus" style="margin-top:4px"></div>
+        </div>
+        <div>
+          <label>To</label>
+          <select id="routeTo">${optionsHtml("IN-DEL")}</select>
+        </div>
+        <div style="display:flex;align-items:flex-end">
+          <button class="btn block" id="routeGoBtn" type="button">▶ Calculate Route & Distance</button>
+        </div>
+      </div>
+      <div id="routeResult"></div>
+      <div id="map-router" class="leaflet-map" style="margin-top:14px"></div>
+    </div>
+  `;
+        return v;
+      }
+      let routeGpsOverride = null;
+      function renderRouter() {
+        // ensure a fresh, correctly-sized map exists for this tab specifically
+        getOrCreateMap("map-router", [24, 78], 4.2);
+      }
+      function bindRouter() {
+        document.getElementById("routeUseGps").addEventListener("click", () => {
+          const statusEl = document.getElementById("routeGpsStatus");
+          if (!navigator.geolocation) {
+            statusEl.textContent = "Geolocation not supported by this browser.";
+            return;
+          }
+          statusEl.textContent = "Requesting live location permission…";
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              routeGpsOverride = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+              };
+              statusEl.innerHTML = `✅ Using live GPS as "From": ${routeGpsOverride.lat.toFixed(5)}, ${routeGpsOverride.lng.toFixed(5)}`;
+            },
+            (err) => {
+              statusEl.textContent = "Could not get location: " + err.message;
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
+          );
+        });
+        document
+          .getElementById("routeGoBtn")
+          .addEventListener("click", async () => {
+            const fromId = document.getElementById("routeFrom").value;
+            const toId = document.getElementById("routeTo").value;
+            const to = locById(toId);
+            const from = routeGpsOverride
+              ? {
+                  name: "Your live GPS location",
+                  lat: routeGpsOverride.lat,
+                  lng: routeGpsOverride.lng,
+                  flag: "📍",
+                }
+              : locById(fromId);
+            if (!from || !to) return;
+            const straight = haversineKm(from.lat, from.lng, to.lat, to.lng);
+            const host = document.getElementById("routeResult");
+            host.innerHTML = `
+      <div class="route-summary">
+        <div class="rs"><span>From</span><b>${from.flag || ""} ${from.name}</b></div>
+        <div class="rs"><span>To</span><b>${to.flag || ""} ${to.name}</b></div>
+        <div class="rs"><span>Straight-line distance</span><b>${straight.toFixed(1)} km</b></div>
+      </div>
+      <p class="small muted" id="routeRoadNote">Fetching real road route and driving distance/time…</p>
+    `;
+            const reg = getOrCreateMap("map-router", [24, 78], 4.2);
+            reg.layer.clearLayers();
+            L.marker([from.lat, from.lng], {
+              icon: divIcon("#16a34a", "🟢", false),
+            })
+              .addTo(reg.layer)
+              .bindPopup(`<b>From:</b> ${from.name}`);
+            L.marker([to.lat, to.lng], {
+              icon: divIcon("#dc2626", "🔴", false),
+            })
+              .addTo(reg.layer)
+              .bindPopup(`<b>To:</b> ${to.name}`);
+            const straightLine = L.polyline(
+              [
+                [from.lat, from.lng],
+                [to.lat, to.lng],
+              ],
+              { color: "#94a3b8", weight: 3, dashArray: "6 8" },
+            ).addTo(reg.layer);
+            reg.map.fitBounds(straightLine.getBounds(), { padding: [40, 40] });
+            setTimeout(() => reg.map.invalidateSize(), 50);
+
+            pushLog(
+              `📍 Route calculated: <b>${from.name}</b> → <b>${to.name}</b> (${straight.toFixed(1)} km straight-line)`,
+            );
+            saveState();
+
+            const roadData = await tryRealRouteFull(
+              from.lat,
+              from.lng,
+              to.lat,
+              to.lng,
+            );
+            const note = document.getElementById("routeRoadNote");
+            if (roadData && roadData.coords && roadData.coords.length) {
+              L.polyline(roadData.coords, {
+                color: "#1d4ed8",
+                weight: 4,
+              }).addTo(reg.layer);
+              reg.map.fitBounds(L.polyline(roadData.coords).getBounds(), {
+                padding: [40, 40],
+              });
+              const hrs = Math.floor(roadData.durationSec / 3600);
+              const mins = Math.round((roadData.durationSec % 3600) / 60);
+              document.querySelector(".route-summary").insertAdjacentHTML(
+                "beforeend",
+                `<div class="rs"><span>Real road distance</span><b>${(roadData.distanceMeters / 1000).toFixed(1)} km</b></div>
+               <div class="rs"><span>Estimated drive time</span><b>${hrs > 0 ? hrs + "h " : ""}${mins}m</b></div>`,
+              );
+              if (note)
+                note.textContent =
+                  "Real road route drawn on the map (solid blue line) alongside the straight-line distance (dashed grey).";
+            } else {
+              if (note)
+                note.textContent =
+                  "Live road-routing service unreachable from this browser right now — showing the straight-line (great-circle) distance only, which is still the exact geographic distance between the two points.";
+            }
+          });
+      }
+      // Fetches a real road route + duration from the public OSRM demo API (runs in the visitor's
+      // own browser, not this sandbox — works wherever the person opens the published page).
+      async function tryRealRouteFull(lat1, lng1, lat2, lng2) {
+        try {
+          const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const route = data && data.routes && data.routes[0];
+          if (!route || !route.geometry) return null;
+          return {
+            coords: route.geometry.coordinates.map((c) => [c[1], c[0]]),
+            distanceMeters: route.distance,
+            durationSec: route.duration,
+          };
+        } catch (e) {
+          return null;
+        }
+      }
+
+      /* ========================= ALERTS (DURING) ========================= */
+      function buildAlertsView() {
+        const v = el(`<div class="view" id="view-alerts"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🚨 Early Warning & Alerts <span class="chip">DURING</span></h1>
+    <p class="page-sub">Every alert here was generated by the Risk Engine (or issued manually below). The siren only sounds automatically for CRITICAL alerts and silences itself the moment no CRITICAL condition remains — it never plays on page load.</p>
+    <div class="card" style="margin-bottom:14px">
+      <h3>📣 Issue Manual Alert</h3>
+      <div class="grid g-3">
+        <div><label>Zone</label><select id="manualAlertZone"></select></div>
+        <div><label>Hazard</label><select id="manualAlertHazard"></select></div>
+        <div><label>Severity</label><select id="manualAlertLevel"><option>MEDIUM</option><option selected>HIGH</option><option>CRITICAL</option></select></div>
+      </div>
+      <label>Message</label>
+      <textarea id="manualAlertMsg" placeholder="Heavy rainfall has caused rapid water-level rise. Residents advised to move to higher ground."></textarea>
+      <button class="btn bad" style="margin-top:10px" id="manualAlertBtn" type="button">Send Alert</button>
+    </div>
+    <div class="card"><h3>🗂️ All Alerts</h3><div id="alertsList"></div></div>
+  `;
+        return v;
+      }
+      function renderAlerts() {
+        const zoneSel = document.getElementById("manualAlertZone");
+        const hazSel = document.getElementById("manualAlertHazard");
+        if (zoneSel && !zoneSel.options.length) {
+          zoneSel.innerHTML = STATE.zones
+            .map((z) => `<option value="${z.id}">${z.name}</option>`)
+            .join("");
+          hazSel.innerHTML = HAZARDS.map(
+            (h) => `<option value="${h.id}">${h.icon} ${h.label}</option>`,
+          ).join("");
+        }
+        const list = document.getElementById("alertsList");
+        list.innerHTML = STATE.alerts.length
+          ? STATE.alerts.map(alertHTML).join("")
+          : `<p class="muted small">No alerts issued yet.</p>`;
+      }
+      function bindAlerts() {
+        document
+          .getElementById("manualAlertBtn")
+          .addEventListener("click", () => {
+            const zoneId = document.getElementById("manualAlertZone").value;
+            const hazardId = document.getElementById("manualAlertHazard").value;
+            const level = document.getElementById("manualAlertLevel").value;
+            const msg =
+              document.getElementById("manualAlertMsg").value.trim() ||
+              "Emergency conditions detected. Please follow official guidance.";
+            const zone = zoneById(zoneId);
+            const hz = HAZARDS.find((h) => h.id === hazardId);
+            const id = "AL-" + Math.floor(1000 + Math.random() * 9000);
+            STATE.alerts.unshift({
+              id,
+              zoneId,
+              level,
+              score: "-",
+              hazard: hz.label,
+              icon: hz.icon,
+              title: `${hz.label.toUpperCase()} ALERT — ${zone.name}`,
+              message: msg,
+              time: new Date().toLocaleString(),
+            });
+            pushLog(
+              `📣 Manual alert <b>${id}</b> sent for <b>${zone.name}</b>`,
+            );
+            document.getElementById("manualAlertMsg").value = "";
+            saveState();
+            renderAlerts();
+            renderDashboard();
+            checkSirenAutoState();
+            toast("Alert sent to " + zone.name, "📣", level);
+          });
+      }
+
+      /* ========================= SOS (with live GPS, photo, age) — DURING ========================= */
+      function buildSosView() {
+        const v = el(`<div class="view" id="view-sos"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🆘 Citizen Emergency SOS <span class="chip">DURING</span></h1>
+    <p class="page-sub">Simulates the citizen mobile app. "Get My Live Location" uses your browser's real GPS (navigator.geolocation) — allow the permission prompt. If a case is marked as needing medical assistance and turns out CRITICAL, the platform automatically draws the route from your live location to the nearest hospital and sounds the siren.</p>
+    <div class="two-col">
+      <div class="card">
+        <h3>Send Emergency SOS</h3>
+        <label>Name</label><input type="text" id="sosName" placeholder="Your name">
+        <label>Age</label><input type="number" id="sosAge" placeholder="e.g. 34" min="0" max="120">
+        <label>Phone</label><input type="tel" id="sosPhone" placeholder="10-digit number">
+        <label>Zone / Approx. Location</label><select id="sosZone"></select>
+        <div class="inline-flex" style="margin-top:8px">
+          <button class="btn sm outline" id="gpsBtn" type="button">📍 Get My Live GPS Location</button>
+          <span class="small muted" id="gpsStatus">No live location captured yet.</span>
+        </div>
+        <label>Number of people</label><input type="number" id="sosPeople" value="1" min="1">
+        <label>Emergency type (select all that apply)</label>
+        <div class="check-row" id="sosTypes">
+          ${["Trapped", "Medical", "Missing Person", "Food", "Water", "Structural Damage", "Woman/Child at risk"].map((t) => `<div class="check-pill" data-t="${t}">${t}</div>`).join("")}
+        </div>
+        <label class="inline-flex" style="cursor:pointer"><input type="checkbox" id="sosMedical" style="width:auto"> &nbsp;Needs urgent medical assistance (track live location for ambulance routing)</label>
+        <label>Photo of situation / injured person (optional)</label>
+        <input type="file" id="sosPhoto" accept="image/*">
+        <img id="sosPhotoPreview" class="photo-preview" style="display:none">
+        <label>Additional message / situation details</label>
+        <textarea id="sosMsg" placeholder="Describe your situation..."></textarea>
+        <button class="btn bad block" style="margin-top:12px" id="sendSosBtn" type="button">🚨 SEND SOS</button>
+      </div>
+      <div class="card">
+        <h3>Confirmation</h3>
+        <div id="sosConfirm"><p class="muted small">Your SOS confirmation will appear here after sending.</p></div>
+        <div class="hr"></div>
+        <h3>📜 Your Recent SOS History</h3>
+        <div id="sosHistory" class="small"></div>
+      </div>
+    </div>
+  `;
+        return v;
+      }
+      let selectedSosTypes = new Set();
+      let capturedGps = null;
+      let capturedPhoto = null;
+      function bindSos() {
+        const zoneSel = document.getElementById("sosZone");
+        zoneSel.innerHTML = STATE.zones
+          .map((z) => `<option value="${z.id}">${z.name}</option>`)
+          .join("");
+
+        document.getElementById("sosTypes").addEventListener("click", (e) => {
+          const p = e.target.closest(".check-pill");
+          if (!p) return;
+          const t = p.dataset.t;
+          if (selectedSosTypes.has(t)) {
+            selectedSosTypes.delete(t);
+            p.classList.remove("on");
+          } else {
+            selectedSosTypes.add(t);
+            p.classList.add("on");
+          }
+        });
+
+        document.getElementById("gpsBtn").addEventListener("click", () => {
+          const statusEl = document.getElementById("gpsStatus");
+          if (!navigator.geolocation) {
+            statusEl.textContent = "Geolocation not supported by this browser.";
+            return;
+          }
+          statusEl.textContent = "Requesting location permission…";
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              capturedGps = {
+                lat: pos.coords.latitude,
+                lng: pos.coords.longitude,
+                accuracy: pos.coords.accuracy,
+              };
+              statusEl.innerHTML = `✅ Live location captured (±${Math.round(pos.coords.accuracy)}m): ${capturedGps.lat.toFixed(5)}, ${capturedGps.lng.toFixed(5)}`;
+            },
+            (err) => {
+              statusEl.textContent =
+                "Could not get location: " +
+                err.message +
+                " (you can still submit using the Zone selector).";
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
+          );
+        });
+
+        document.getElementById("sosPhoto").addEventListener("change", (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            capturedPhoto = reader.result;
+            const img = document.getElementById("sosPhotoPreview");
+            img.src = capturedPhoto;
+            img.style.display = "block";
+          };
+          reader.readAsDataURL(file);
+        });
+
+        document.getElementById("sendSosBtn").addEventListener("click", () => {
+          const name =
+            document.getElementById("sosName").value.trim() || "Anonymous";
+          const age = document.getElementById("sosAge").value.trim();
+          const phone = document.getElementById("sosPhone").value.trim();
+          const zoneId = document.getElementById("sosZone").value;
+          const people =
+            parseInt(document.getElementById("sosPeople").value) || 1;
+          const msg = document.getElementById("sosMsg").value.trim();
+          const medicalAssist = document.getElementById("sosMedical").checked;
+          const types = Array.from(selectedSosTypes);
+          if (types.length === 0) {
+            toast("Please select at least one emergency type", "⚠️");
+            return;
+          }
+
+          let priority = "MEDIUM";
+          if (
+            types.includes("Trapped") ||
+            types.includes("Medical") ||
+            types.includes("Missing Person") ||
+            types.includes("Woman/Child at risk") ||
+            medicalAssist
+          )
+            priority = "HIGH";
+          const zone = zoneById(zoneId);
+          if (
+            (zone.riskLevel === "CRITICAL" && priority === "HIGH") ||
+            (medicalAssist && types.includes("Trapped")) ||
+            types.includes("Woman/Child at risk")
+          )
+            priority = "CRITICAL";
+
+          STATE.sosCounter++;
+          const id = "SOS-" + STATE.sosCounter;
+          const nearestTeam =
+            STATE.teams.find(
+              (t) => t.zoneId === zoneId && t.status === "available",
+            ) || STATE.teams.find((t) => t.status === "available");
+
+          const record = {
+            id,
+            name,
+            age: age || null,
+            phone,
+            zoneId,
+            people,
+            types,
+            message: msg,
+            priority,
+            status: "waiting",
+            assignedTeam: null,
+            time: new Date().toLocaleString(),
+            medicalAssist,
+            gps: capturedGps,
+            photo: capturedPhoto,
+            route: null,
+          };
+
+          // if this is a critical/medical case with a live GPS fix, route to the nearest hospital immediately
+          if (
+            (priority === "CRITICAL" ||
+              (priority === "HIGH" && medicalAssist)) &&
+            capturedGps
+          ) {
+            const dest = nearestFacility(
+              capturedGps.lat,
+              capturedGps.lng,
+              STATE.hospitals,
+            );
+            if (dest) {
+              record.route = {
+                coords: [
+                  [capturedGps.lat, capturedGps.lng],
+                  [dest.lat, dest.lng],
+                ],
+                destName: dest.name,
+                destLat: dest.lat,
+                destLng: dest.lng,
+                distanceKm: dest.distanceKm,
+                real: false,
+              };
+              tryRealRoute(
+                capturedGps.lat,
+                capturedGps.lng,
+                dest.lat,
+                dest.lng,
+              ).then((coords) => {
+                if (coords && coords.length) {
+                  record.route.coords = coords;
+                  record.route.real = true;
+                  saveState();
+                  renderMap("map-main");
+                  renderMap("map-dash");
+                }
+              });
+            }
+          }
+
+          STATE.sos.unshift(record);
+          pushLog(
+            `🆘 New SOS <b>${id}</b> from <b>${name}</b> in <b>${zone.name}</b> — priority ${priority}${medicalAssist ? " · MEDICAL" : ""}`,
+          );
+          saveState();
+          checkSirenAutoState();
+
+          document.getElementById("sosConfirm").innerHTML = `
+      <div class="alert-item ${priority}">
+        <b>✅ SOS REQUEST SENT</b>
+        <div class="small">Request ID: <b>${id}</b></div>
+        <div class="small">Priority: <span class="badge b-${priority}">${priority}</span></div>
+        <div class="small">Zone: ${zone.name}</div>
+        <div class="small">Live GPS: ${capturedGps ? capturedGps.lat.toFixed(5) + ", " + capturedGps.lng.toFixed(5) : "Not captured — using zone location"}</div>
+        <div class="small">Nearest rescue unit: ${nearestTeam ? nearestTeam.name + " (" + nearestTeam.vehicle + ")" : "All units currently busy"}</div>
+        <div class="small">Estimated response: ${nearestTeam ? 8 + Math.floor(Math.random() * 12) + " minutes" : "Pending unit availability"}</div>
+        ${record.route ? `<div class="small">🏥 Route drawn to nearest hospital: <b>${record.route.destName}</b> (~${record.route.distanceKm.toFixed(1)} km) — see Live GPS Map tab.</div>` : ""}
+      </div>`;
+
+          // reset form
+          document.getElementById("sosName").value = "";
+          document.getElementById("sosAge").value = "";
+          document.getElementById("sosPhone").value = "";
+          document.getElementById("sosPeople").value = 1;
+          document.getElementById("sosMsg").value = "";
+          document.getElementById("sosMedical").checked = false;
+          document.getElementById("sosPhoto").value = "";
+          document.getElementById("sosPhotoPreview").style.display = "none";
+          capturedPhoto = null;
+          capturedGps = null;
+          document.getElementById("gpsStatus").textContent =
+            "No live location captured yet.";
+          selectedSosTypes.clear();
+          document
+            .getElementById("sosTypes")
+            .querySelectorAll(".check-pill")
+            .forEach((p) => p.classList.remove("on"));
+
+          renderSosHistory();
+          renderRescue();
+          renderDashboard();
+          renderMap("map-main");
+          toast(
+            "SOS " + id + " sent — rescue coordination notified",
+            "🆘",
+            priority,
+          );
+        });
+      }
+      // Attempts a real road route via the public OSRM demo API; falls back to the straight line already set.
+      async function tryRealRoute(lat1, lng1, lat2, lng2) {
+        try {
+          const url = `https://router.project-osrm.org/route/v1/driving/${lng1},${lat1};${lng2},${lat2}?overview=full&geometries=geojson`;
+          const res = await fetch(url);
+          if (!res.ok) return null;
+          const data = await res.json();
+          const geom =
+            data &&
+            data.routes &&
+            data.routes[0] &&
+            data.routes[0].geometry &&
+            data.routes[0].geometry.coordinates;
+          if (!geom) return null;
+          return geom.map((c) => [c[1], c[0]]);
+        } catch (e) {
+          return null;
+        } // offline / blocked — the straight-line fallback already drawn stays in place
+      }
+      function renderSosHistory() {
+        const host = document.getElementById("sosHistory");
+        if (!host) return;
+        const recent = STATE.sos.slice(0, 6);
+        host.innerHTML = recent.length
+          ? recent
+              .map(
+                (s) =>
+                  `<div style="padding:6px 0;border-bottom:1px solid var(--border)"><b>${s.id}</b> · ${zoneById(s.zoneId).name} · ${s.people} people · <span class="badge b-${s.status}">${s.status}</span></div>`,
+              )
+              .join("")
+          : '<p class="muted">No SOS sent yet.</p>';
+      }
+
+      /* ========================= RESCUE COORDINATION (DURING) ========================= */
+      function buildRescueView() {
+        const v = el(`<div class="view" id="view-rescue"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🚑 Rescue Command Center <span class="chip">DURING</span></h1>
+    <p class="page-sub">All open SOS requests, sorted by priority. Assign a team, then mark rescued — statuses update live everywhere (map, dashboard, recovery analytics).</p>
+    <div class="card"><div class="table-wrap"><table id="rescueTable"><thead><tr>
+      <th></th><th>SOS ID</th><th>Zone</th><th>Age</th><th>People</th><th>Type</th><th>Priority</th><th>Status</th><th>Assigned Unit</th><th>Action</th>
+    </tr></thead><tbody></tbody></table></div></div>
+    <div class="hr"></div>
+    <div class="card"><h3>🚓 Fleet Status</h3><div class="table-wrap"><table id="fleetTable"><thead><tr><th>Unit</th><th>Vehicle</th><th>Base Zone</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+  `;
+        return v;
+      }
+      function renderRescue() {
+        const tbody = document.querySelector("#rescueTable tbody");
+        if (!tbody) return;
+        const order = { CRITICAL: 0, HIGH: 1, MEDIUM: 2, LOW: 3 };
+        const rows = [...STATE.sos].sort(
+          (a, b) => order[a.priority] - order[b.priority] || 0,
+        );
+        tbody.innerHTML = rows.length
+          ? rows
+              .map((s) => {
+                const z = zoneById(s.zoneId);
+                let actionBtn = "";
+                if (s.status === "waiting")
+                  actionBtn = `<button class="btn sm" data-act="assign" data-id="${s.id}" type="button">Assign Team</button>`;
+                else if (s.status === "assigned")
+                  actionBtn = `<button class="btn sm good" data-act="rescue" data-id="${s.id}" type="button">Mark Rescued</button>`;
+                else actionBtn = `<span class="small muted">Completed</span>`;
+                return `<tr>
+      <td>${s.photo ? `<img src="${s.photo}" class="photo-preview" style="width:36px;height:36px;object-fit:cover;margin:0">` : "—"}</td>
+      <td><b>${s.id}</b>${s.medicalAssist ? " 🩺" : ""}</td><td>${z.name}</td><td>${s.age || "—"}</td><td>${s.people}</td>
+      <td class="small">${s.types.join(", ")}</td>
+      <td><span class="badge b-${s.priority}">${s.priority}</span></td>
+      <td><span class="badge b-${s.status}">${s.status}</span></td>
+      <td class="small">${s.assignedTeam ? teamById(s.assignedTeam).name : "—"}</td>
+      <td>${actionBtn}</td>
+    </tr>`;
+              })
+              .join("")
+          : `<tr><td colspan="10" class="muted small">No SOS requests yet. Submit one from the Citizen SOS tab.</td></tr>`;
+
+        const fleet = document.querySelector("#fleetTable tbody");
+        fleet.innerHTML = STATE.teams
+          .map(
+            (t) =>
+              `<tr><td><b>${t.name}</b></td><td>${t.vehicle}</td><td>${zoneById(t.zoneId).name}</td><td><span class="badge b-${t.status === "available" ? "LOW" : "HIGH"}">${t.status}</span></td></tr>`,
+          )
+          .join("");
+      }
+      function assignTeam(sosId) {
+        const sos = STATE.sos.find((s) => s.id === sosId);
+        let team =
+          STATE.teams.find(
+            (t) => t.zoneId === sos.zoneId && t.status === "available",
+          ) || STATE.teams.find((t) => t.status === "available");
+        if (!team) {
+          toast("No rescue units currently available", "⚠️");
+          return;
+        }
+        team.status = "busy";
+        sos.status = "assigned";
+        sos.assignedTeam = team.id;
+        pushLog(
+          `✅ ${team.name} assigned to <b>${sos.id}</b> (${zoneById(sos.zoneId).name})`,
+        );
+        saveState();
+        renderRescue();
+        renderDashboard();
+        renderMap("map-main");
+        toast(team.name + " assigned to " + sos.id, "🚑");
+      }
+      function markRescued(sosId) {
+        const sos = STATE.sos.find((s) => s.id === sosId);
+        sos.status = "rescued";
+        if (sos.assignedTeam) {
+          const t = teamById(sos.assignedTeam);
+          if (t) t.status = "available";
+        }
+        STATE.recovery.rescued += sos.people;
+        STATE.recovery.relocated += sos.people;
+        pushLog(
+          `🟢 SOS <b>${sos.id}</b> marked rescued — ${sos.people} people safe`,
+        );
+        saveState();
+        renderRescue();
+        renderDashboard();
+        renderRecovery();
+        renderMap("map-main");
+        checkSirenAutoState();
+        toast(sos.id + " marked rescued", "🟢");
+      }
+
+      /* ========================= SHELTERS ========================= */
+      function buildSheltersView() {
+        const v = el(`<div class="view" id="view-shelters"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🏠 Shelter Management</h1>
+    <p class="page-sub">Live capacity tracking. Update occupancy as people arrive, so the system always knows which shelters can still take evacuees. Shelters tagged 👩‍👧 have a dedicated women-and-children-friendly space.</p>
+    <div class="grid g-3" id="shelterCards"></div>
+  `;
+        return v;
+      }
+      function renderShelters() {
+        const host = document.getElementById("shelterCards");
+        if (!host) return;
+        host.innerHTML = STATE.shelters
+          .map((s) => {
+            const pct = Math.min(
+              100,
+              Math.round((s.occupied / s.capacity) * 100),
+            );
+            const status =
+              s.occupied >= s.capacity
+                ? "FULL"
+                : pct > 85
+                  ? "NEARLY FULL"
+                  : "AVAILABLE";
+            const color =
+              status === "FULL"
+                ? "var(--bad)"
+                : status === "NEARLY FULL"
+                  ? "var(--warn)"
+                  : "var(--good)";
+            return `<div class="card">
+      <h3>${s.name} <span class="tag" style="color:${color}">${status}</span></h3>
+      <div class="small muted">${zoneById(s.zoneId).name} ${s.medical ? "· 🏥 Medical support" : ""} ${s.womenChild ? "· 👩‍👧 Women & child space" : ""}</div>
+      <div style="margin:10px 0"><div class="progress"><div style="width:${pct}%;background:${color}"></div></div>
+      <div class="small" style="margin-top:4px">${s.occupied} / ${s.capacity} occupied (${s.capacity - s.occupied} available)</div></div>
+      <div class="inline-flex">
+        <button class="btn sm outline" data-a="-10" data-id="${s.id}" type="button">−10 people</button>
+        <button class="btn sm" data-a="10" data-id="${s.id}" type="button">+10 people</button>
+      </div>
+    </div>`;
+          })
+          .join("");
+      }
+
+      /* ========================= WOMEN & CHILD SAFETY ========================= */
+      function buildSafetyView() {
+        const v = el(`<div class="view" id="view-safety"></div>`);
+        const helplineRows = (country) =>
+          HELPLINES[country]
+            .map(
+              ([label, num]) =>
+                `<tr><td><a href="tel:${num.replace(/[^0-9+]/g, "")}">${num}</a></td><td class="small">${label}</td></tr>`,
+            )
+            .join("");
+        v.innerHTML = `
+    <h1 class="page-title">👩‍👧 Women & Child Safety</h1>
+    <p class="page-sub">A dedicated safety layer: one-tap panic alert with live location sharing, verified national helplines for India, Pakistan and Japan, and a live list of shelters with women-and-children-friendly spaces.</p>
+    <div class="two-col">
+      <div class="card">
+        <h3>🆘 One-Tap Panic Alert</h3>
+        <p class="small">Sends a CRITICAL priority SOS tagged "Woman/Child at risk" using your live GPS, sounds the siren, and puts it at the top of Rescue Coordination.</p>
+        <label>Name (optional)</label><input type="text" id="safetyName" placeholder="Your name">
+        <label>Zone / Approx. Location (used if GPS is unavailable)</label><select id="safetyZone"></select>
+        <button class="btn pink block" id="safetyPanicBtn" type="button" style="margin-top:10px">🆘 Send Panic Alert Now</button>
+        <div id="safetyConfirm" class="small" style="margin-top:10px"></div>
+        <div class="hr"></div>
+        <h3>📤 Share Live Location with a Trusted Contact</h3>
+        <label>Trusted contact name</label><input type="text" id="trustedName" placeholder="e.g. Mother, Neighbour">
+        <label>Trusted contact phone (with country code, digits only)</label><input type="tel" id="trustedPhone" placeholder="e.g. 919876543210">
+        <button class="btn outline block" id="shareLocBtn" type="button" style="margin-top:10px">📍 Get Live GPS & Open WhatsApp Share</button>
+        <div class="small muted" id="shareLocStatus" style="margin-top:6px"></div>
+      </div>
+      <div class="card">
+        <h3>📞 Verified National Helplines</h3>
+        <div class="table-wrap">
+          <b class="small"><span class="country-flag">🇮🇳</span>India</b>
+          <table class="helpline-table"><tbody>${helplineRows("India")}</tbody></table>
+        </div>
+        <div class="hr"></div>
+        <div class="table-wrap">
+          <b class="small"><span class="country-flag">🇵🇰</span>Pakistan</b>
+          <table class="helpline-table"><tbody>${helplineRows("Pakistan")}</tbody></table>
+        </div>
+        <div class="hr"></div>
+        <div class="table-wrap">
+          <b class="small"><span class="country-flag">🇯🇵</span>Japan</b>
+          <table class="helpline-table"><tbody>${helplineRows("Japan")}</tbody></table>
+        </div>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="card">
+      <h3>🏠 Women & Child-Friendly Shelters Right Now</h3>
+      <div id="safetyShelterList" class="table-wrap"></div>
+    </div>
+    <div class="hr"></div>
+    <div class="card">
+      <h3>🛡️ Safety Guidance</h3>
+      <div class="grid g-2">
+        <div>
+          <b class="small">During evacuation</b>
+          <ul class="small">
+            <li>Keep children in sight at all times; use a wrist-tether or ID card with a phone number for very young children</li>
+            <li>Travel in groups where possible, prefer well-lit and populated routes</li>
+            <li>Register with shelter staff immediately on arrival so you appear on the headcount</li>
+          </ul>
+        </div>
+        <div>
+          <b class="small">If you feel unsafe</b>
+          <ul class="small">
+            <li>Move toward shelter staff, a rescue unit, or the shelter's designated women & child space</li>
+            <li>Use the panic button above — it shares your exact GPS with rescue coordination</li>
+            <li>Call the national helpline for your country from the list on this page</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  `;
+        return v;
+      }
+      function renderSafety() {
+        const zoneSel = document.getElementById("safetyZone");
+        if (zoneSel && !zoneSel.options.length) {
+          zoneSel.innerHTML = STATE.zones
+            .map((z) => `<option value="${z.id}">${z.name}</option>`)
+            .join("");
+        }
+        const host = document.getElementById("safetyShelterList");
+        if (host) {
+          const wc = STATE.shelters.filter((s) => s.womenChild);
+          host.innerHTML = wc.length
+            ? `<table><thead><tr><th>Shelter</th><th>Zone</th><th>Free Space</th><th>Medical</th></tr></thead><tbody>${wc
+                .map(
+                  (s) =>
+                    `<tr><td><b>${s.name}</b></td><td>${zoneById(s.zoneId).name}</td><td>${s.capacity - s.occupied}</td><td>${s.medical ? "Yes" : "No"}</td></tr>`,
+                )
+                .join("")}</tbody></table>`
+            : `<p class="muted small">No shelters currently flagged — check Shelter Management tab.</p>`;
+        }
+        const nameEl = document.getElementById("trustedName");
+        const phoneEl = document.getElementById("trustedPhone");
+        if (nameEl && STATE.trustedContact)
+          nameEl.value = STATE.trustedContact.name || "";
+        if (phoneEl && STATE.trustedContact)
+          phoneEl.value = STATE.trustedContact.phone || "";
+      }
+      function bindSafety() {
+        document
+          .getElementById("safetyPanicBtn")
+          .addEventListener("click", () => {
+            const name =
+              document.getElementById("safetyName").value.trim() || "Anonymous";
+            const zoneId = document.getElementById("safetyZone").value;
+            const confirmHost = document.getElementById("safetyConfirm");
+            const finalizePanic = (gps) => {
+              STATE.sosCounter++;
+              const id = "SOS-" + STATE.sosCounter;
+              const zone = zoneById(zoneId);
+              const record = {
+                id,
+                name,
+                age: null,
+                phone: "",
+                zoneId,
+                people: 1,
+                types: ["Woman/Child at risk"],
+                message:
+                  "Panic button activated from Women & Child Safety panel.",
+                priority: "CRITICAL",
+                status: "waiting",
+                assignedTeam: null,
+                time: new Date().toLocaleString(),
+                medicalAssist: true,
+                gps: gps || null,
+                photo: null,
+                route: null,
+              };
+              if (gps) {
+                const dest = nearestFacility(gps.lat, gps.lng, STATE.hospitals);
+                if (dest) {
+                  record.route = {
+                    coords: [
+                      [gps.lat, gps.lng],
+                      [dest.lat, dest.lng],
+                    ],
+                    destName: dest.name,
+                    destLat: dest.lat,
+                    destLng: dest.lng,
+                    distanceKm: dest.distanceKm,
+                    real: false,
+                  };
+                }
+              }
+              STATE.sos.unshift(record);
+              pushLog(
+                `🆘 PANIC ALERT <b>${id}</b> from <b>${name}</b> — CRITICAL, Woman/Child at risk`,
+              );
+              saveState();
+              checkSirenAutoState();
+              confirmHost.innerHTML = `<div class="alert-item CRITICAL"><b>✅ Panic alert ${id} sent — CRITICAL priority.</b><br>Rescue Coordination has been notified${gps ? " with your live GPS location." : " using your selected zone (no GPS captured)."}</div>`;
+              renderRescue();
+              renderDashboard();
+              renderMap("map-main");
+              toast("Panic alert " + id + " sent", "🆘", "CRITICAL");
+            };
+            if (navigator.geolocation) {
+              confirmHost.innerHTML = `<p class="small muted">Capturing live location…</p>`;
+              navigator.geolocation.getCurrentPosition(
+                (pos) =>
+                  finalizePanic({
+                    lat: pos.coords.latitude,
+                    lng: pos.coords.longitude,
+                  }),
+                () => finalizePanic(null),
+                { enableHighAccuracy: true, timeout: 8000 },
+              );
+            } else {
+              finalizePanic(null);
+            }
+          });
+
+        document.getElementById("shareLocBtn").addEventListener("click", () => {
+          const statusEl = document.getElementById("shareLocStatus");
+          const name = document.getElementById("trustedName").value.trim();
+          const phone = document
+            .getElementById("trustedPhone")
+            .value.trim()
+            .replace(/[^0-9]/g, "");
+          STATE.trustedContact = { name, phone };
+          saveState();
+          if (!navigator.geolocation) {
+            statusEl.textContent = "Geolocation not supported by this browser.";
+            return;
+          }
+          statusEl.textContent = "Getting your live location…";
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              const lat = pos.coords.latitude.toFixed(5);
+              const lng = pos.coords.longitude.toFixed(5);
+              const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+              const text = encodeURIComponent(
+                `This is my live location during an emergency: ${mapsUrl}${name ? " — sent to " + name : ""}`,
+              );
+              const waUrl = phone
+                ? `https://wa.me/${phone}?text=${text}`
+                : `https://wa.me/?text=${text}`;
+              statusEl.innerHTML = `✅ Location captured (${lat}, ${lng}). Opening WhatsApp share…`;
+              window.open(waUrl, "_blank");
+              pushLog(
+                `📤 Live location shared with trusted contact${name ? " (" + name + ")" : ""}`,
+              );
+              saveState();
+            },
+            (err) => {
+              statusEl.textContent = "Could not get location: " + err.message;
+            },
+            { enableHighAccuracy: true, timeout: 10000 },
+          );
+        });
+      }
+
+      /* Global top-bar panic button — usable from any tab */
+      document.getElementById("panicBtnTop").addEventListener("click", () => {
+        showView("safety");
+        setTimeout(() => {
+          document
+            .getElementById("safetyPanicBtn")
+            .scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 120);
+      });
+
+      /* ========================= RELIEF (AFTER) ========================= */
+      function buildReliefView() {
+        const v = el(`<div class="view" id="view-relief"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">📦 Relief & Resource Management <span class="chip">AFTER</span></h1>
+    <p class="page-sub">Central inventory. Allocate real quantities to a zone — stock actually decreases and a dispatch record is logged and charted in Recovery & Analytics.</p>
+    <div class="two-col">
+      <div class="card"><h3>🏬 Central Inventory</h3><div id="inventoryList"></div></div>
+      <div class="card">
+        <h3>🚚 Allocate Resources</h3>
+        <label>Destination Zone</label><select id="reliefZone"></select>
+        <label>Food (packets)</label><input type="number" id="relFood" value="0" min="0">
+        <label>Water (bottles)</label><input type="number" id="relWater" value="0" min="0">
+        <label>Medicine (units)</label><input type="number" id="relMed" value="0" min="0">
+        <label>Blankets</label><input type="number" id="relBlanket" value="0" min="0">
+        <button class="btn block" style="margin-top:12px" id="allocateBtn" type="button">✅ Allocate & Dispatch</button>
+      </div>
+    </div>
+    <div class="hr"></div>
+    <div class="card"><h3>📋 Dispatch Log</h3><div class="table-wrap"><table id="reliefLogTable"><thead><tr><th>Time</th><th>Zone</th><th>Food</th><th>Water</th><th>Medicine</th><th>Blankets</th><th>Status</th></tr></thead><tbody></tbody></table></div></div>
+  `;
+        return v;
+      }
+      function renderRelief() {
+        const inv = STATE.inventory;
+        const host = document.getElementById("inventoryList");
+        if (!host) return;
+        const items = [
+          ["food", "🍚 Food (packets)"],
+          ["water", "💧 Water (bottles)"],
+          ["medicine", "💊 Medicine (units)"],
+          ["blankets", "🧣 Blankets"],
+        ];
+        host.innerHTML = items
+          .map(
+            ([k, l]) =>
+              `<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)"><span class="small">${l}</span><b>${inv[k].toLocaleString()}</b></div>`,
+          )
+          .join("");
+        const zoneSel = document.getElementById("reliefZone");
+        if (zoneSel && !zoneSel.options.length)
+          zoneSel.innerHTML = STATE.zones
+            .map((z) => `<option value="${z.id}">${z.name}</option>`)
+            .join("");
+        const tbody = document.querySelector("#reliefLogTable tbody");
+        tbody.innerHTML = STATE.reliefLog.length
+          ? STATE.reliefLog
+              .map(
+                (r) =>
+                  `<tr><td class="small">${r.time}</td><td>${zoneById(r.zoneId).name}</td><td>${r.food}</td><td>${r.water}</td><td>${r.medicine}</td><td>${r.blankets}</td><td><span class="badge b-LOW">🚚 Dispatched</span></td></tr>`,
+              )
+              .join("")
+          : `<tr><td colspan="7" class="muted small">No dispatches yet.</td></tr>`;
+      }
+      function bindRelief() {
+        document.getElementById("allocateBtn").addEventListener("click", () => {
+          const zoneId = document.getElementById("reliefZone").value;
+          const food = parseInt(document.getElementById("relFood").value) || 0;
+          const water =
+            parseInt(document.getElementById("relWater").value) || 0;
+          const medicine =
+            parseInt(document.getElementById("relMed").value) || 0;
+          const blankets =
+            parseInt(document.getElementById("relBlanket").value) || 0;
+          if (food + water + medicine + blankets === 0) {
+            toast("Enter a quantity to allocate", "⚠️");
+            return;
+          }
+          const inv = STATE.inventory;
+          if (
+            food > inv.food ||
+            water > inv.water ||
+            medicine > inv.medicine ||
+            blankets > inv.blankets
+          ) {
+            toast("Not enough stock in central inventory", "⚠️");
+            return;
+          }
+          inv.food -= food;
+          inv.water -= water;
+          inv.medicine -= medicine;
+          inv.blankets -= blankets;
+          STATE.reliefLog.unshift({
+            time: new Date().toLocaleString(),
+            zoneId,
+            food,
+            water,
+            medicine,
+            blankets,
+          });
+          pushLog(
+            `🚚 Relief dispatched to <b>${zoneById(zoneId).name}</b>: ${food} food, ${water} water, ${medicine} medicine, ${blankets} blankets`,
+          );
+          ["relFood", "relWater", "relMed", "relBlanket"].forEach(
+            (id) => (document.getElementById(id).value = 0),
+          );
+          saveState();
+          renderRelief();
+          renderRecovery();
+          renderDashboard();
+          toast("Relief dispatched to " + zoneById(zoneId).name, "🚚");
+        });
+      }
+
+      /* ========================= EVACUATION PLANNER ========================= */
+      function buildEvacView() {
+        const v = el(`<div class="view" id="view-evac"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">🧭 Evacuation Planner</h1>
+    <p class="page-sub">Pick an affected zone — the planner finds the nearest shelter with free capacity, computes real distance, and generates a plan.</p>
+    <div class="card">
+      <label>Affected Zone</label><select id="evacZone"></select>
+      <label class="inline-flex" style="cursor:pointer"><input type="checkbox" id="evacPrioritizeWC" style="width:auto"> &nbsp;Prioritise a women & child-friendly shelter</label>
+      <button class="btn" style="margin-top:10px" id="evacBtn" type="button">🧭 Generate Evacuation Plan</button>
+      <div id="evacResult" style="margin-top:16px"></div>
+    </div>
+  `;
+        return v;
+      }
+      function renderEvac() {
+        const sel = document.getElementById("evacZone");
+        if (sel && !sel.options.length)
+          sel.innerHTML = STATE.zones
+            .map((z) => `<option value="${z.id}">${z.name}</option>`)
+            .join("");
+      }
+      function bindEvac() {
+        document.getElementById("evacBtn").addEventListener("click", () => {
+          const zoneId = document.getElementById("evacZone").value;
+          const wcOnly = document.getElementById("evacPrioritizeWC").checked;
+          const zone = zoneById(zoneId);
+          let candidates = STATE.shelters
+            .filter((s) => s.capacity - s.occupied > 0)
+            .map((s) => ({
+              ...s,
+              dist: haversineKm(zone.lat, zone.lng, s.lat, s.lng),
+            }))
+            .sort((a, b) => a.dist - b.dist);
+          if (wcOnly && candidates.some((c) => c.womenChild))
+            candidates = candidates.filter((c) => c.womenChild);
+          const best = candidates[0];
+          const host = document.getElementById("evacResult");
+          if (!best) {
+            host.innerHTML = `<p class="small" style="color:var(--bad)">⚠️ No shelters currently have free capacity. Recommend opening an emergency overflow shelter.</p>`;
+            return;
+          }
+          host.innerHTML = `
+      <div class="side-panel">
+        <b>EVACUATION PLAN — ${zone.name} → ${best.name}</b>
+        <div class="hr"></div>
+        <div class="small">Population to move: <b>${zone.population.toLocaleString()}</b></div>
+        <div class="small">Distance: <b>${best.dist.toFixed(1)} km</b> (straight-line)</div>
+        <div class="small">Shelter capacity available: <b>${best.capacity - best.occupied}</b> / ${best.capacity}</div>
+        <div class="small">Medical support at shelter: <b>${best.medical ? "Yes" : "No"}</b></div>
+        <div class="small">Women & child-friendly space: <b>${best.womenChild ? "Yes" : "No"}</b></div>
+        <div class="hr"></div>
+        <b class="small">Route Instructions</b>
+        <ol class="small">
+          <li>Assemble at ${zone.name} designated pickup point.</li>
+          <li>Move via main arterial road toward ${zoneById(best.zoneId).name}.</li>
+          <li>Report to shelter registration desk at ${best.name}.</li>
+          <li>Priority boarding for elderly, children, pregnant women, and medical cases.</li>
+        </ol>
+      </div>`;
+          pushLog(
+            `🧭 Evacuation plan generated: <b>${zone.name}</b> → <b>${best.name}</b>`,
+          );
+          saveState();
+        });
+      }
+
+      /* ========================= RECOVERY / ANALYTICS (AFTER) ========================= */
+      function buildRecoveryView() {
+        const v = el(`<div class="view" id="view-recovery"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">📊 Recovery & Post-Disaster Analytics <span class="chip">AFTER</span></h1>
+    <p class="page-sub">All numbers below are computed live from actual rescue and relief actions taken in this session.</p>
+    <div class="grid g-4" id="recoveryStats"></div>
+    <div class="hr"></div>
+    <div class="grid g-2">
+      <div class="card"><h3>📦 Resources Dispatched by Type</h3><canvas id="chartRelief" height="180"></canvas></div>
+      <div class="card"><h3>🧮 SOS Status Breakdown</h3><canvas id="chartSosStatus" height="180"></canvas></div>
+    </div>
+  `;
+        return v;
+      }
+      let chartRelief = null,
+        chartSosStatus = null;
+      function renderRecovery() {
+        const host = document.getElementById("recoveryStats");
+        if (!host) return;
+        const r = STATE.recovery;
+        const totalRelief = STATE.reliefLog.reduce(
+          (s, l) => s + l.food + l.water + l.medicine + l.blankets,
+          0,
+        );
+        host.innerHTML = `
+    <div class="card stat-card b-green"><div class="icon">🟢</div><div class="num">${r.rescued}</div><div class="lbl">People Rescued</div></div>
+    <div class="card stat-card b-blue"><div class="icon">🏠</div><div class="num">${r.relocated}</div><div class="lbl">People Relocated</div></div>
+    <div class="card stat-card b-amber"><div class="icon">📦</div><div class="num">${totalRelief.toLocaleString()}</div><div class="lbl">Relief Units Dispatched</div></div>
+    <div class="card stat-card b-red"><div class="icon">🏚️</div><div class="num">${r.buildingsDamaged}</div><div class="lbl">Buildings Reported Damaged</div></div>
+  `;
+        const sums = { food: 0, water: 0, medicine: 0, blankets: 0 };
+        STATE.reliefLog.forEach((l) => {
+          sums.food += l.food;
+          sums.water += l.water;
+          sums.medicine += l.medicine;
+          sums.blankets += l.blankets;
+        });
+        const ctx1 = document.getElementById("chartRelief");
+        if (chartRelief) chartRelief.destroy();
+        chartRelief = new Chart(ctx1, {
+          type: "bar",
+          data: {
+            labels: ["Food", "Water", "Medicine", "Blankets"],
+            datasets: [
+              {
+                data: [sums.food, sums.water, sums.medicine, sums.blankets],
+                backgroundColor: ["#1d4ed8", "#0ea5e9", "#d97706", "#16a34a"],
+              },
+            ],
+          },
+          options: { plugins: { legend: { display: false } } },
+        });
+
+        const statusCount = { waiting: 0, assigned: 0, rescued: 0 };
+        STATE.sos.forEach((s) => statusCount[s.status]++);
+        const ctx2 = document.getElementById("chartSosStatus");
+        if (chartSosStatus) chartSosStatus.destroy();
+        chartSosStatus = new Chart(ctx2, {
+          type: "doughnut",
+          data: {
+            labels: ["Waiting", "Assigned", "Rescued"],
+            datasets: [
+              {
+                data: [
+                  statusCount.waiting,
+                  statusCount.assigned,
+                  statusCount.rescued,
+                ],
+                backgroundColor: ["#d97706", "#0ea5e9", "#16a34a"],
+              },
+            ],
+          },
+          options: { plugins: { legend: { position: "bottom" } } },
+        });
+      }
+
+      /* ========================= ASSISTANT ========================= */
+      function buildAssistantView() {
+        const v = el(`<div class="view" id="view-assistant"></div>`);
+        v.innerHTML = `
+    <h1 class="page-title">💬 Disaster Assistant</h1>
+    <p class="page-sub">A controlled knowledge-base assistant (not an open LLM) that answers from the platform's live data — try "nearest shelter", "active alerts", "flood safety tips", "women helpline", "distance Karachi to Lahore".</p>
+    <div class="card">
+      <div class="chatlog" id="chatLog"></div>
+      <div class="inline-flex">
+        <input type="text" id="chatInput" placeholder="Ask e.g. 'which shelter has space' or 'flood safety tips'">
+        <button class="btn" id="chatSendBtn" type="button">Send</button>
+      </div>
+      <div class="pill-row" style="margin-top:10px">
+        <button class="pill" data-q="active alerts" type="button">Active alerts</button>
+        <button class="pill" data-q="nearest shelter" type="button">Nearest shelter</button>
+        <button class="pill" data-q="flood safety tips" type="button">Flood safety tips</button>
+        <button class="pill" data-q="women helpline" type="button">Women helpline</button>
+        <button class="pill" data-q="child helpline" type="button">Child helpline</button>
+      </div>
+    </div>
+  `;
+        return v;
+      }
+      function botReply(q) {
+        const s = q.toLowerCase();
+        if (s.includes("women") && s.includes("helpline"))
+          return `Women's helplines: 🇮🇳 India 1091 / 181 · 🇵🇰 Pakistan Madadgaar 1043 · 🇯🇵 Japan Domestic Violence Hotline 0570-0-55210. Full list is in the Women & Child Safety tab.`;
+        if (s.includes("child") && s.includes("helpline"))
+          return `Child helplines: 🇮🇳 India 1098 · 🇵🇰 Pakistan Child Protection 1121 · 🇯🇵 Japan Child Consultation Centre 189. Full list is in the Women & Child Safety tab.`;
+        if (s.includes("panic"))
+          return 'Use the red "🆘 PANIC" button in the top bar, or open the "Women & Child Safety" tab, to send an instant CRITICAL SOS with your live GPS.';
+        if (
+          s.includes("distance") ||
+          s.includes("router") ||
+          s.includes("route")
+        )
+          return 'Open the "Location Router" tab, pick a From and To location anywhere in India, Pakistan or Japan (or use your live GPS), and it will show the exact straight-line distance plus a real road route and drive time.';
+        if (s.includes("shelter")) {
+          const best = [...STATE.shelters].sort(
+            (a, b) => b.capacity - b.occupied - (a.capacity - a.occupied),
+          )[0];
+          return `The shelter with the most free capacity right now is <b>${best.name}</b> in ${zoneById(best.zoneId).name}, with ${best.capacity - best.occupied} of ${best.capacity} spaces available${best.medical ? " and on-site medical support" : ""}${best.womenChild ? ", including a women & child-friendly space" : ""}.`;
+        }
+        if (s.includes("alert")) {
+          const active = STATE.alerts.filter(
+            (a) => a.level === "HIGH" || a.level === "CRITICAL",
+          );
+          if (!active.length)
+            return "There are currently no active High or Critical alerts on the platform.";
+          return (
+            `There ${active.length === 1 ? "is" : "are"} ${active.length} active high-severity alert${active.length === 1 ? "" : "s"}: ` +
+            active.map((a) => a.title).join("; ") +
+            "."
+          );
+        }
+        if (s.includes("sos") || s.includes("emergency"))
+          return 'To send an emergency SOS, go to the "Citizen SOS" tab, tap "Get My Live GPS Location", select the emergency type, and tap Send SOS. Your request appears immediately in Rescue Coordination.';
+        if (s.includes("flood"))
+          return "Flood safety: move to higher ground immediately, avoid walking or driving through moving water, stay off flooded roads, keep away from downed power lines, and follow official evacuation routes to your nearest shelter.";
+        if (s.includes("earthquake"))
+          return "Earthquake safety: Drop, Cover, and Hold On. Stay away from windows and heavy furniture, and if outdoors move to open ground away from buildings and power lines.";
+        if (s.includes("landslide"))
+          return "Landslide safety: watch for cracks in the ground, tilting trees or poles, and unusual sounds. Move away from steep slopes and drainage channels during heavy rain.";
+        if (s.includes("cyclone"))
+          return "Cyclone safety: secure loose objects outdoors, stock food/water/torches, stay indoors away from windows, and follow the coastal evacuation plan if advised.";
+        if (s.includes("heatwave") || s.includes("heat"))
+          return "Heatwave safety: stay hydrated, avoid outdoor activity during peak afternoon heat, wear light clothing, and check on elderly neighbours.";
+        if (s.includes("fire"))
+          return "Forest fire safety: keep a cleared perimeter around structures, evacuate early when advised, and avoid dry vegetation zones during high wind-fire risk periods.";
+        if (s.includes("rescue") || s.includes("team")) {
+          const avail = STATE.teams.filter(
+            (t) => t.status === "available",
+          ).length;
+          return `Currently ${avail} of ${STATE.teams.length} rescue units are available for dispatch.`;
+        }
+        if (s.includes("siren"))
+          return "The siren is silent by default. It only activates automatically for a CRITICAL risk zone, a CRITICAL alert, a CRITICAL SOS case, or the panic button — and switches itself off the moment none of those remain.";
+        return "I can help with: active alerts, nearest shelter with space, sending an SOS, the panic button, distance between two cities (Location Router), or safety tips for flood, landslide, cyclone, heatwave, forest fire and earthquake. Try asking one of those.";
+      }
+      function bindAssistant() {
+        const log = document.getElementById("chatLog");
+        function addMsg(text, who) {
+          const d = document.createElement("div");
+          d.className = "msg " + (who === "me" ? "me" : "bot");
+          d.innerHTML = text;
+          log.appendChild(d);
+          log.scrollTop = log.scrollHeight;
+        }
+        addMsg(
+          "Hi, I'm the RakshaNet-X Disaster Assistant. Ask me about shelters, alerts, the panic button, city-to-city distances, or safety tips.",
+          "bot",
+        );
+        function send(q) {
+          if (!q.trim()) return;
+          addMsg(q, "me");
+          setTimeout(() => addMsg(botReply(q), "bot"), 250);
+          document.getElementById("chatInput").value = "";
+        }
+        document
+          .getElementById("chatSendBtn")
+          .addEventListener("click", () =>
+            send(document.getElementById("chatInput").value),
+          );
+        document
+          .getElementById("chatInput")
+          .addEventListener("keydown", (e) => {
+            if (e.key === "Enter") send(e.target.value);
+          });
+        document
+          .querySelector("#view-assistant .pill-row")
+          .addEventListener("click", (e) => {
+            const p = e.target.closest(".pill[data-q]");
+            if (!p) return;
+            send(p.dataset.q);
+          });
+      }
+
+      /* ---------------------------- GLOBAL DELEGATED CLICK HANDLER ----------------------------
+   Handles all dynamically-rendered table/card action buttons in one place so nothing
+   ever goes "stuck" after a re-render replaces innerHTML. */
+      document.addEventListener("click", function (e) {
+        const t = e.target;
+        const assignBtn = t.closest('[data-act="assign"]');
+        if (assignBtn) {
+          assignTeam(assignBtn.dataset.id);
+          return;
+        }
+        const rescueBtn = t.closest('[data-act="rescue"]');
+        if (rescueBtn) {
+          markRescued(rescueBtn.dataset.id);
+          return;
+        }
+        const shelterBtn = t.closest("button[data-a]");
+        if (shelterBtn) {
+          const s = shelterById(shelterBtn.dataset.id);
+          s.occupied = Math.max(
+            0,
+            Math.min(s.capacity, s.occupied + parseInt(shelterBtn.dataset.a)),
+          );
+          saveState();
+          renderShelters();
+          renderDashboard();
+          renderSafety();
+          return;
+        }
+      });
+
+      /* ---------------------------- INIT ---------------------------- */
+      function renderAll() {
+        try {
+          renderDashboard();
+        } catch (e) {
+          console.error("dashboard", e);
+        }
+        try {
+          renderHazardPills();
+          renderRiskInputs();
+        } catch (e) {
+          console.error("risk", e);
+        }
+        try {
+          renderMap("map-main");
+        } catch (e) {
+          console.error("map", e);
+        }
+        try {
+          renderAlerts();
+        } catch (e) {
+          console.error("alerts", e);
+        }
+        try {
+          renderSosHistory();
+        } catch (e) {
+          console.error("sos", e);
+        }
+        try {
+          renderRescue();
+        } catch (e) {
+          console.error("rescue", e);
+        }
+        try {
+          renderShelters();
+        } catch (e) {
+          console.error("shelters", e);
+        }
+        try {
+          renderSafety();
+        } catch (e) {
+          console.error("safety", e);
+        }
+        try {
+          renderRelief();
+        } catch (e) {
+          console.error("relief", e);
+        }
+        try {
+          renderEvac();
+        } catch (e) {
+          console.error("evac", e);
+        }
+        try {
+          renderRecovery();
+        } catch (e) {
+          console.error("recovery", e);
+        }
+      }
+
+      loadState();
+      buildTabs();
+      buildViews();
+      bindRiskEngine();
+      bindAlerts();
+      bindSos();
+      bindRelief();
+      bindEvac();
+      bindSafety();
+      bindRouter();
+      bindAssistant();
+      renderAll();
+      showView("dashboard");
+      // Siren must reflect real state on load, not just be silent by default —
+      // if a previous session was saved mid-disaster, restore the alarm; otherwise stay quiet.
+      checkSirenAutoState();
+    </script>
+  </body>
+</html>
